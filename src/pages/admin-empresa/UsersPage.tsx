@@ -35,7 +35,6 @@ export function UsersPage() {
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-6">
               <p className="text-slate-600">Contenido del módulo de usuarios</p>
-              {/* Aquí irá el contenido del módulo de usuarios */}
             </div>
           </div>
         </main>
@@ -43,3 +42,5 @@ export function UsersPage() {
     </div>
   )
 }
+
+export default UsersPage

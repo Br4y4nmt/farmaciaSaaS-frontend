@@ -240,7 +240,7 @@ export function SuperAdminSidebar({ collapsed }: SuperAdminSidebarProps) {
           {!collapsed && hasSubmenu && (
             <ul className={`sidebar-submenu ${isOpen ? 'is-open' : ''}`}>
               {item.submenu?.map((sub) => {
-                const isSubActive = location.pathname.startsWith(sub.path)
+                const isSubActive = location.pathname === sub.path
                 return (
                   <li key={sub.path}>
                     <button

@@ -23,6 +23,7 @@ export function AppRoutes() {
         <Route path={ROLE_PATHS.SUPER_ADMIN} element={<SuperAdminPage />} />
         <Route path="/super-admin/usuarios" element={<UsersPage />} />
         <Route path="/super-admin/empresa" element={<CompanyPage />} />
+        <Route path="/super-admin/empresa/usuarios" element={<UsersPage />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={[2]} />}>

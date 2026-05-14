@@ -4,60 +4,38 @@ import { SuperAdminHeader } from '../../components/layout/headers/SuperAdminHead
 import { SuperAdminSidebar } from '../../components/layout/siderbars/SuperAdminSidebar'
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
-
-type Company = {
-  id: number
-  email: string
-  nombre: string
-  perfil: string
-  apiToken: string
-  establecimiento: string
-}
+import CreateCompanyModal from '../../features/empresa/components/CreateCompanyModal'
+import EditCompanyModal from '../../features/empresa/components/EditCompanyModal'
+import { useEmpresas } from '../../features/empresa/hooks/useEmpresas'
+import type { Empresa } from '../../features/empresa/types/empresa.types'
 
 export function CompanyPage() {
   const user = useStoredUser()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
-
-  const companies: Company[] = [
-    {
-      id: 1,
-      email: 'empresa1@gmail.com',
-      nombre: 'EMPRESA DEMO 1',
-      perfil: 'Administrador',
-      apiToken: 'nPJhhXbyRsMrGsyWZxhJ7TC9d74tDGkXou9o5Wu55wSOhmT38',
-      establecimiento: 'Almacén Lima',
-    },
-    {
-      id: 2,
-      email: 'empresa2@gmail.com',
-      nombre: 'EMPRESA DEMO 2',
-      perfil: 'Administrador',
-      apiToken: 'f7cYjhiDPUwuBvCI5SkwFQ9dg03zxwwmr2qHBofhuWXfYBpgV',
-      establecimiento: 'Almacén Lima',
-    },
-  ]
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editingCompany, setEditingCompany] = useState<Empresa | null>(null)
+  const { empresas, isLoading, error, refetch } = useEmpresas()
 
   function handleLogout() {
     clearStoredUser()
     navigate('/login', { replace: true })
   }
 
-  function handleEdit(companyId: number) {
-    console.log('Editar empresa:', companyId)
-  }
-
-  function handleDelete(companyId: number) {
-    console.log('Eliminar empresa:', companyId)
+  function handleEdit(company: Empresa) {
+    setEditingCompany(company)
+    setIsEditModalOpen(true)
   }
 
   function handleNew() {
-    console.log('Crear nueva empresa')
+    setIsCreateModalOpen(true)
   }
 
   return (
     <div className="flex min-h-screen bg-slate-100">
       <SuperAdminSidebar collapsed={collapsed} />
+
       <div className="flex flex-col flex-1 min-w-0">
         <SuperAdminHeader
           user={user}
@@ -66,9 +44,10 @@ export function CompanyPage() {
           setCollapsed={setCollapsed}
         />
 
-        {/* Header de página - fuera del main para ocupar todo el ancho */}
-        <div className="w-full bg-white px-8 py-2.5  shadow-slate-100">
+        {/* HEADER */}
+        <div className="w-full bg-white px-8 py-2.5 shadow-slate-100">
           <div className="flex items-center justify-between">
+
             <div className="flex items-center gap-3">
               <div className="text-slate-400">
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
@@ -76,8 +55,12 @@ export function CompanyPage() {
                   <path d="M4 20a8 8 0 0116 0" />
                 </svg>
               </div>
-              <h1 className="text-sm font-normal text-slate-400">Empresas</h1>
+
+              <h1 className="text-sm font-normal text-slate-400">
+                Empresas
+              </h1>
             </div>
+
             <button
               onClick={handleNew}
               className="flex items-center gap-2 rounded-sm border border-slate-700 bg-slate-900 px-2.5 py-2 text-[13px] font-normal text-white transition hover:bg-slate-800"
@@ -95,57 +78,130 @@ export function CompanyPage() {
               </svg>
               Nuevo
             </button>
+
           </div>
         </div>
 
+        {/* CREATE MODAL */}
+        <CreateCompanyModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={() => {
+            setIsCreateModalOpen(false)
+            refetch()
+          }}
+        />
+
+        {/* EDIT MODAL */}
+        <EditCompanyModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false)
+            setEditingCompany(null)
+          }}
+          initialData={editingCompany ? {
+            nombre: editingCompany.nombre,
+            ruc: editingCompany.ruc,
+            direccion: editingCompany.direccion,
+            telefono: editingCompany.telefono,
+            correo: editingCompany.correo,
+            estado: editingCompany.estado,
+          } : undefined}
+          companyId={editingCompany?.id}
+          onSuccess={() => {
+            setIsEditModalOpen(false)
+            setEditingCompany(null)
+            refetch()
+          }}
+        />
+
+        {/* TABLE */}
         <main className="px-8 py-4">
           <div className="w-full">
             <div className="overflow-x-auto rounded-lg border border-slate-100">
-              <div className="rounded-t-none bg-slate-900 px-6 py-4">
-                <h2 className="text-xl font-medium text-white">Listado de empresas</h2>
+
+              <div className="bg-slate-900 px-6 py-4">
+                <h2 className="text-xl font-medium text-white">
+                  Listado de empresas
+                </h2>
               </div>
 
               <table className="w-full bg-white">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="bg-white px-6 py-3 text-left text-sm font-normal text-slate-900">#</th>
-                    <th className="bg-white px-6 py-3 text-left text-sm font-normal text-slate-900">Email</th>
-                    <th className="bg-white px-6 py-3 text-left text-sm font-normal text-slate-900">Nombre</th>
-                    <th className="bg-white px-6 py-3 text-left text-sm font-normal text-slate-900">Perfil</th>
-                    <th className="bg-white px-6 py-3 text-left text-sm font-normal text-slate-900">Api Token</th>
-                    <th className="bg-white px-6 py-3 text-left text-sm font-normal text-slate-900">Establecimiento</th>
-                    <th className="bg-white px-6 py-3 text-left text-sm font-normal text-slate-900">Acciones</th>
+                    <th className="px-6 py-3 text-left text-sm font-normal text-slate-900">#</th>
+                    <th className="px-6 py-3 text-left text-sm font-normal text-slate-900">Nombre</th>
+                    <th className="px-6 py-3 text-left text-sm font-normal text-slate-900">Correo</th>
+                    <th className="px-6 py-3 text-left text-sm font-normal text-slate-900">Teléfono</th>
+                    <th className="px-6 py-3 text-left text-sm font-normal text-slate-900">RUC</th>
+                    <th className="px-6 py-3 text-left text-sm font-normal text-slate-900">Estado</th>
+                    <th className="px-6 py-3 text-left text-sm font-normal text-slate-900">Acciones</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {companies.map((company) => (
-                    <tr key={company.id} className="hover:bg-slate-50">
-                      <td className="bg-white px-6 py-4 text-sm text-slate-700">{company.id}</td>
-                      <td className="bg-white px-6 py-4 text-sm text-slate-700">{company.email}</td>
-                      <td className="bg-white px-6 py-4 text-sm text-slate-700">{company.nombre}</td>
-                      <td className="bg-white px-6 py-4 text-sm text-slate-700">{company.perfil}</td>
-                      <td className="bg-white px-6 py-4 text-sm text-slate-700">{company.apiToken}</td>
-                      <td className="bg-white px-6 py-4 text-sm text-slate-700">{company.establecimiento}</td>
-                      <td className="bg-white px-6 py-4 text-sm">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(company.id)}
-                            className="btn btn-xs btn-info waves-effect"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleDelete(company.id)}
-                            className="btn btn-xs btn-danger waves-effect"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">
+                        Cargando empresas...
                       </td>
                     </tr>
-                  ))}
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-red-500">
+                        {error}
+                      </td>
+                    </tr>
+                  ) : empresas.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">
+                        No hay empresas registradas
+                      </td>
+                    </tr>
+                  ) : (
+                    empresas.map((company) => (
+                      <tr key={company.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-4 text-sm text-slate-700">
+                          {company.id}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-slate-700">
+                          {company.nombre}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-slate-700">
+                          {company.correo || '-'}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-slate-700">
+                          {company.telefono || '-'}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-slate-700">
+                          {company.ruc || '-'}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-slate-700">
+                          {company.estado ? 'Activo' : 'Inactivo'}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(company)}
+                              className="btn btn-xs btn-info waves-effect"
+                            >
+                              Editar
+                            </button>
+                            {/* Eliminado: botón de eliminar removido por decisión del producto */}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
+
             </div>
           </div>
         </main>
