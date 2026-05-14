@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { LoginPage } from '../../pages/LoginPage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
 import { AdminEmpresaPage } from '../../pages/admin-empresa/AdminEmpresaPage'
+import { UsersPage } from '../../pages/admin-empresa/UsersPage'
+import { CompanyPage } from '../../pages/admin-empresa/CompanyPage'
 import { CajeroPage } from '../../pages/cajero/CajeroPage'
 import { ContadorPage } from '../../pages/contador/ContadorPage'
 import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
@@ -19,6 +21,8 @@ export function AppRoutes() {
 
       <Route element={<ProtectedRoute allowedRoles={[1]} />}>
         <Route path={ROLE_PATHS.SUPER_ADMIN} element={<SuperAdminPage />} />
+        <Route path="/super-admin/usuarios" element={<UsersPage />} />
+        <Route path="/super-admin/empresa" element={<CompanyPage />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={[2]} />}>

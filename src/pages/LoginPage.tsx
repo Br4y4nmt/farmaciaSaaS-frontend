@@ -32,21 +32,26 @@ export function LoginPage() {
       </div>
 
       {/* Form side — ~40% of screen */}
-      <div className="w-full lg:w-[40%] flex items-center justify-center px-8 py-10">
+      <div className="w-full lg:w-[40%] flex items-center justify-center px-8 py-10 relative">
+
+        {/* Logo esquina superior derecha del panel */}
+        <div className="absolute top-6 right-8">
+          <img
+            src="/images/logo.png"
+            alt="Logo"
+            className="h-30 w-auto object-contain"
+          />
+        </div>
+
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold uppercase tracking-wide text-slate-600">
-              Bienvenido a<br />Corporacion SSTIC E.I.R.L
+            <h1 className="text-2xl font-medium uppercase tracking-wide text-slate-600">
+              Bienvenido a<br />Corporación BRYAN E.I.R.L
             </h1>
             <p className="mt-4 text-sm text-slate-500">Ingresa a tu cuenta</p>
           </div>
 
           <LoginForm onSuccess={handleLoginSuccess} />
-
-          <p className="mt-6 text-center text-xs text-slate-400">
-            Demo: <span className="font-mono">superadmin@admin.com</span> /{' '}
-            <span className="font-mono">123456</span>
-          </p>
         </div>
       </div>
     </div>

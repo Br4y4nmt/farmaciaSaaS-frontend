@@ -1,8 +1,12 @@
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
 type SidebarItem = {
   label: string
   icon: ReactNode
+  path?: string
+  submenu?: { label: string; path: string }[]
 }
 
 const items: SidebarItem[] = [
@@ -14,6 +18,22 @@ const items: SidebarItem[] = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 10v10a1 1 0 001 1h4V14h4v7h4a1 1 0 001-1V10" />
       </svg>
     ),
+    path: '/super-admin',
+  },
+
+  {
+    label: 'Empresa',
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+        <polyline points="17 21 17 13 7 13 7 21" />
+        <polyline points="7 5 7 13 17 13 17 5" />
+      </svg>
+    ),
+    submenu: [
+      { label: 'Lista de Empresas', path: '/super-admin/empresa' },
+      { label: 'Usuarios por Empresa', path: '/super-admin/empresa/usuarios' },
+    ],
   },
   {
     label: 'Ventas',
@@ -150,52 +170,98 @@ const items: SidebarItem[] = [
   },
 ]
 
-export function SuperAdminSidebar() {
+type SuperAdminSidebarProps = {
+  collapsed: boolean
+}
+
+export function SuperAdminSidebar({ collapsed }: SuperAdminSidebarProps) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [openMenu, setOpenMenu] = useState<string | null>('Empresa')
+
+  const menuItems = useMemo(() => items, [])
+
   return (
-    <aside className="flex h-screen w-[280px] flex-col border-r border-slate-800/50 bg-slate-900 text-slate-100">
-      <div className="px-6 py-6">
-        <div className="flex items-center gap-2">
-          <div className="rounded-xl bg-emerald-500/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">
-            Farmacia
-          </div>
-          <span className="text-lg font-semibold tracking-wide">SaaS</span>
-        </div>
-      </div>
+    <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`}>
+      {/* Logo */}
+<div className="flex items-center justify-center border-b border-slate-700 px-4 py-6">
+  {collapsed ? (
+    <img
+      src="/images/logo.png"
+      alt="Logo"
+      className="h-12 w-12 object-contain"
+    />
+  ) : (
+    <img
+      src="/images/logo.png"
+      alt="Logo"
+      className="h-35 w-auto object-contain"
+    />
+  )}
+</div>
+     <nav className="sidebar-nav">
+  <ul className="sidebar-list">
+    {menuItems.map((item) => {
+      const hasSubmenu = !!item.submenu?.length
+      const isActive = item.path
+        ? location.pathname === item.path  // exacto, no startsWith
+        : item.submenu?.some((sub) => location.pathname === sub.path)  // también exacto
+      const isOpen = openMenu === item.label
+      const isDashboard = item.label === 'Dashboard'
 
-      <div className="px-4 pb-4">
-        <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-3 text-sm font-semibold shadow-lg shadow-emerald-600/30">
-          Dashboard
-        </div>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto px-2 pb-6">
-        <ul className="space-y-1">
-          {items.map((item) => (
-            <li key={item.label}>
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:bg-slate-800"
-              >
-                <span className="text-slate-300">{item.icon}</span>
-                <span>{item.label}</span>
-                <svg
-                  viewBox="0 0 24 24"
-                  className="ml-auto h-4 w-4 text-slate-500"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.6}
-                >
+      return (
+        <li key={item.label}>
+          <button
+            type="button"
+            onClick={() => {
+              if (hasSubmenu) {
+                setOpenMenu(isOpen ? null : item.label)
+                return
+              }
+              if (item.path) {
+                navigate(item.path)
+              }
+            }}
+            className={`sidebar-button ${isActive && !isDashboard ? 'is-active' : ''} ${isOpen && !isActive ? 'is-open' : ''} ${
+            isDashboard && isActive ? 'bg-blue-600 text-white hover:bg-blue-700' : ''
+          }`}
+          >
+            <span className="sidebar-icon">{item.icon}</span>
+            {!collapsed && <span className="sidebar-label">{item.label}</span>}
+            {!collapsed && hasSubmenu && (
+              <span className={`sidebar-chevron ${isOpen ? 'is-rotated' : ''}`}>
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.6}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
                 </svg>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
+              </span>
+            )}
+          </button>
 
-      <div className="border-t border-slate-800/50 px-6 py-4 text-xs text-slate-400">
-        Version 0.1.0
-      </div>
+          {!collapsed && hasSubmenu && (
+            <ul className={`sidebar-submenu ${isOpen ? 'is-open' : ''}`}>
+              {item.submenu?.map((sub) => {
+                const isSubActive = location.pathname.startsWith(sub.path)
+                return (
+                  <li key={sub.path}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(sub.path)}
+                      className={`sidebar-subitem ${isSubActive ? 'is-active' : ''}`}
+                    >
+                      {sub.label}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </li>
+      )
+    })}
+  </ul>
+</nav>
+
+      <div className="sidebar-footer">Version 0.0.1</div>
     </aside>
   )
 }
