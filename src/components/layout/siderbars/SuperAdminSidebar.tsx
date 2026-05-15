@@ -199,7 +199,7 @@ export function SuperAdminSidebar({ collapsed }: SuperAdminSidebarProps) {
     />
   )}
 </div>
-     <nav className="sidebar-nav">
+  <nav className="sidebar-nav">
   <ul className="sidebar-list">
     {menuItems.map((item) => {
       const hasSubmenu = !!item.submenu?.length
@@ -260,7 +260,6 @@ export function SuperAdminSidebar({ collapsed }: SuperAdminSidebarProps) {
     })}
   </ul>
 </nav>
-
       <div className="sidebar-footer">Version 0.0.1</div>
     </aside>
   )
