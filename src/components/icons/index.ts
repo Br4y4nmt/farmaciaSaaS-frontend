@@ -1,0 +1,15 @@
+export { default as DashboardIcon } from './DashboardIcon';
+export { default as EmpresaIcon } from './EmpresaIcon';
+export { default as VentasIcon } from './VentasIcon';
+export { default as PlanIcon } from './PlanIcon';
+export { default as InventoryIcon } from './InventoryIcon';
+export { default as CompraIcon } from './CompraIcon';
+export { default as ClienteIcon } from './ClienteIcon';
+export { default as ProveedorIcon } from './ProveedorIcon';
+export { default as CajaIcon } from './CajaIcon';
+export { default as RecetaIcon } from './RecetaIcon';
+export { default as ReportIcon } from './ReportIcon';
+export { default as SecurityIcon } from './SecurityIcon';
+export { default as SettingsIcon } from './SettingsIcon';
+export { default as SupportIcon } from './SupportIcon';
+export { default as CloseIcon } from './CloseIcon';

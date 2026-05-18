@@ -1,4 +1,5 @@
 import { api } from '../../../services/api'
+import type { GetEmpresasUsuariosResumenResponse } from '../types/empresa.types'
 
 export const usuarioService = {
   async getAll() {
@@ -10,4 +11,14 @@ export const usuarioService = {
     const { data } = await api.post('/usuarios', payload)
     return data.data
   },
+
+  async getEmpresasUsuariosResumen() {
+    const { data } = await api.get<{
+      ok: boolean
+      data: GetEmpresasUsuariosResumenResponse
+    }>('/empresas/usuarios-resumen')
+
+    return data.data
+  },
+
 }

@@ -1,5 +1,10 @@
 import { useState, type FormEvent, type ChangeEvent } from 'react'
+import {
+  showSuccessToast,
+  showErrorToast
+} from '../../../components/ui/toast'
 import { useCreateCompany } from '../hooks/useCreateCompany'
+import { CloseIcon } from '../../../components/icons'
 
 type Props = {
   isOpen: boolean
@@ -13,7 +18,6 @@ type FormData = {
   direccion: string
   telefono: string
   correo: string
-
   admin_nombres: string
   admin_apellidos: string
   admin_correo: string
@@ -27,7 +31,6 @@ const initialForm: FormData = {
   direccion: '',
   telefono: '',
   correo: '',
-
   admin_nombres: '',
   admin_apellidos: '',
   admin_correo: '',
@@ -43,6 +46,10 @@ export default function CreateCompanyModal({
   const { createCompany, isLoading, error } = useCreateCompany()
 
   const [form, setForm] = useState<FormData>(initialForm)
+  const [activeSection, setActiveSection] = useState<'empresa' | 'admin'>(
+    'empresa',
+  )
+  const [sectionError, setSectionError] = useState<string | null>(null)
 
   if (!isOpen) return null
 
@@ -55,165 +62,253 @@ export default function CreateCompanyModal({
       ...prev,
       [name]: value,
     }))
+
+    if (sectionError) {
+      setSectionError(null)
+    }
   }
 
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  function handleSectionChange(section: 'empresa' | 'admin') {
+    if (section === 'admin' && !form.nombre.trim()) {
+      setSectionError('Completa el campo: Nombre empresa.')
+      setActiveSection('empresa')
+      return
+    }
+
+    setSectionError(null)
+    setActiveSection(section)
+  }
+
+  async function handleSubmit(
+    e: FormEvent<HTMLFormElement>
+  ) {
     e.preventDefault()
 
-    const response = await createCompany(form)
+    const response =
+      await createCompany(form)
 
     if (response) {
+      showSuccessToast(
+        'Empresa creada correctamente',
+        'La empresa fue registrada con éxito'
+      )
+
       setForm(initialForm)
+
       onClose()
+
       onSuccess?.()
+
+      return
     }
+
+    showErrorToast(
+      'No se pudo crear la empresa',
+      'Verifica los datos e inténtalo nuevamente'
+    )
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
-        {/* Header */}
-        <header className="mb-6 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-slate-800">
+      <div className="relative w-full max-w-2xl rounded-sm border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-center justify-between px-6 py-4">
+          <h3 className="text-xl font-medium text-slate-800">
             Crear empresa
           </h3>
 
           <button
             type="button"
             onClick={onClose}
-            className="text-sm text-slate-500 hover:text-slate-700"
+            className="text-slate-400 hover:text-slate-600 transition-colors"
           >
-            Cerrar
+            <CloseIcon />
           </button>
-        </header>
+        </div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 gap-4 md:grid-cols-2"
-        >
-          {/* Empresa */}
-          <div className="md:col-span-2">
-            <h4 className="mb-2 text-sm font-semibold text-slate-700">
-              Datos de la empresa
-            </h4>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          <div className="border-b border-slate-200">
+            <div className="flex gap-6">
+              <button
+                type="button"
+                onClick={() => handleSectionChange('empresa')}
+                className={`pb-2 text-sm font-medium transition-colors ${
+                  activeSection === 'empresa'
+                    ? 'text-sky-600 border-b-2 border-sky-600'
+                    : 'text-slate-500'
+                }`}
+              >
+                Datos de la empresa
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSectionChange('admin')}
+                className={`pb-2 text-sm font-medium transition-colors ${
+                  activeSection === 'admin'
+                    ? 'text-sky-600 border-b-2 border-sky-600'
+                    : 'text-slate-500'
+                }`}
+              >
+                Administrador
+              </button>
+            </div>
           </div>
 
-          <input
-            name="nombre"
-            placeholder="Nombre empresa"
-            value={form.nombre}
-            onChange={handleChange}
-            required
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          />
+          {activeSection === 'empresa' && (
+            <div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Nombre empresa
+                  </label>
+                  <input
+                    name="nombre"
+                    value={form.nombre}
+                    onChange={handleChange}
+                    required
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
 
-          <input
-            name="ruc"
-            placeholder="RUC"
-            value={form.ruc}
-            onChange={handleChange}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          />
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    RUC
+                  </label>
+                  <input
+                    name="ruc"
+                    value={form.ruc}
+                    onChange={handleChange}
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
 
-          <input
-            name="direccion"
-            placeholder="Dirección"
-            value={form.direccion}
-            onChange={handleChange}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          />
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Teléfono empresa
+                  </label>
+                  <input
+                    name="telefono"
+                    value={form.telefono}
+                    onChange={handleChange}
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
 
-          <input
-            name="telefono"
-            placeholder="Teléfono empresa"
-            value={form.telefono}
-            onChange={handleChange}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          />
+                <div className="col-span-2 flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Dirección
+                  </label>
+                  <input
+                    name="direccion"
+                    value={form.direccion}
+                    onChange={handleChange}
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
 
-          <input
-            type="email"
-            name="correo"
-            placeholder="Correo empresa"
-            value={form.correo}
-            onChange={handleChange}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 md:col-span-2"
-          />
-
-          {/* Admin */}
-          <div className="mt-4 md:col-span-2">
-            <h4 className="mb-2 text-sm font-semibold text-slate-700">
-              Administrador
-            </h4>
-          </div>
-
-          <input
-            name="admin_nombres"
-            placeholder="Nombres"
-            value={form.admin_nombres}
-            onChange={handleChange}
-            required
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          />
-
-          <input
-            name="admin_apellidos"
-            placeholder="Apellidos"
-            value={form.admin_apellidos}
-            onChange={handleChange}
-            required
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          />
-
-          <input
-            type="email"
-            name="admin_correo"
-            placeholder="Correo administrador"
-            value={form.admin_correo}
-            onChange={handleChange}
-            required
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          />
-
-          <input
-            type="password"
-            name="admin_password"
-            placeholder="Contraseña"
-            value={form.admin_password}
-            onChange={handleChange}
-            required
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-          />
-
-          <input
-            name="admin_telefono"
-            placeholder="Teléfono administrador"
-            value={form.admin_telefono}
-            onChange={handleChange}
-            className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 md:col-span-2"
-          />
-
-          {/* Error */}
-          {error && (
-            <div className="md:col-span-2 rounded bg-red-50 px-3 py-2 text-sm text-red-600">
-              {error}
+                <div className="col-span-2 flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Correo empresa
+                  </label>
+                  <input
+                    type="email"
+                    name="correo"
+                    value={form.correo}
+                    onChange={handleChange}
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="mt-4 flex justify-end gap-3 md:col-span-2">
+          {activeSection === 'admin' && (
+            <div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Nombres
+                  </label>
+                  <input
+                    name="admin_nombres"
+                    value={form.admin_nombres}
+                    onChange={handleChange}
+                    required
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Apellidos
+                  </label>
+                  <input
+                    name="admin_apellidos"
+                    value={form.admin_apellidos}
+                    onChange={handleChange}
+                    required
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Correo administrador
+                  </label>
+                  <input
+                    type="email"
+                    name="admin_correo"
+                    value={form.admin_correo}
+                    onChange={handleChange}
+                    required
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Contraseña
+                  </label>
+                  <input
+                    type="password"
+                    name="admin_password"
+                    value={form.admin_password}
+                    onChange={handleChange}
+                    required
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+
+                <div className="col-span-2 flex flex-col gap-1">
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Teléfono administrador
+                  </label>
+                  <input
+                    name="admin_telefono"
+                    value={form.admin_telefono}
+                    onChange={handleChange}
+                    className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(error || sectionError) && (
+            <div className="rounded bg-red-50 p-3 text-sm text-red-600">
+              {sectionError || error}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+              className="rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Cancelar
             </button>
@@ -221,9 +316,9 @@ export default function CreateCompanyModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              className="rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
             >
-              {isLoading ? 'Creando...' : 'Crear empresa'}
+              {isLoading ? 'Creando...' : 'Guardar'}
             </button>
           </div>
         </form>

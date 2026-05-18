@@ -15,11 +15,18 @@ export function LoginPage() {
     }
   }, [navigate])
 
-  function handleLoginSuccess(nextUser: AuthUser) {
-    setStoredUser(nextUser)
-    navigate(getRoleRoute(nextUser.rol_id), { replace: true })
-  }
+ function handleLoginSuccess(nextUser: AuthUser) {
+  setStoredUser(nextUser)
 
+  localStorage.setItem('showBienvenida', 'true')
+
+  localStorage.setItem(
+    'nombre_usuario',
+    `${nextUser.nombres} ${nextUser.apellidos}`
+  )
+
+  navigate(getRoleRoute(nextUser.rol_id), { replace: true })
+}
   return (
     <div className="min-h-screen bg-white flex">
       {/* Image side — ~60% of screen */}

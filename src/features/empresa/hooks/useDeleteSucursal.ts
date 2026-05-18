@@ -1,21 +1,21 @@
 import { useState } from 'react'
-import { usuarioService } from '../api/usuarioService'
+import { sucursalService } from '../api/sucursalService'
 
-export function useCreateUser() {
+export function useDeleteSucursal() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function createUser(payload: any) {
+  async function deleteSucursal(id: number) {
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await usuarioService.create(payload)
+      const response = await sucursalService.delete(id)
       return response
     } catch (err: any) {
       const message =
         err.response?.data?.message ||
-        'Error al crear usuario'
+        'Error al eliminar sucursal'
 
       setError(message)
       return null
@@ -25,7 +25,7 @@ export function useCreateUser() {
   }
 
   return {
-    createUser,
+    deleteSucursal,
     isLoading,
     error,
   }

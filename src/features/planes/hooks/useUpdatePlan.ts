@@ -1,31 +1,29 @@
 import { useState } from 'react'
-import { usuarioService } from '../api/usuarioService'
+import { planService } from '../api/planService'
+import type { UpdatePlanDto } from '../types/plan.types'
 
-export function useCreateUser() {
+export function useUpdatePlan() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function createUser(payload: any) {
+  async function updatePlan(id: number, data: UpdatePlanDto) {
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await usuarioService.create(payload)
-      return response
+      return await planService.update(id, data)
     } catch (err: any) {
       const message =
-        err.response?.data?.message ||
-        'Error al crear usuario'
-
+        err.response?.data?.message || 'Error al actualizar el plan'
       setError(message)
-      return null
+      throw err
     } finally {
       setIsLoading(false)
     }
   }
 
   return {
-    createUser,
+    updatePlan,
     isLoading,
     error,
   }

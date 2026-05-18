@@ -1,5 +1,6 @@
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react'
 import { useUpdateCompany } from '../hooks/useUpdateCompany'
+import { CloseIcon } from '../../../components/icons'
 
 type Props = {
   isOpen: boolean
@@ -38,7 +39,6 @@ export default function EditCompanyModal({
 
   function handleChange(e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target
-    // for select 'estado' we receive string 'true'|'false' -> convert to boolean
     if (name === 'estado') {
       setForm((prev) => ({ ...prev, [name]: value === 'true' }))
       return
@@ -63,41 +63,108 @@ export default function EditCompanyModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
-        <header className="mb-6 flex items-center justify-between">
-          <h3 className="text-xl font-semibold text-slate-800">Editar empresa</h3>
-          <button type="button" onClick={onClose} className="text-sm text-slate-500 hover:text-slate-700">Cerrar</button>
-        </header>
+      <div className="relative w-full max-w-2xl rounded-sm border border-slate-200 bg-white shadow-xl">
+        <div className="flex items-center justify-between px-6 py-4">
+          <h3 className="text-xl font-medium text-slate-800">Editar empresa</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <CloseIcon />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <h4 className="mb-2 text-sm font-semibold text-slate-700">Datos de la empresa</h4>
-          </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+          <div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 flex flex-col gap-1">
+                <label className="text-[13px] font-medium text-[#606266]">Nombre empresa</label>
+                <input
+                  name="nombre"
+                  value={form.nombre}
+                  onChange={handleChange}
+                  required
+                  className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
 
-          <input name="nombre" placeholder="Nombre empresa" value={form.nombre} onChange={handleChange} required className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500" />
-          <input name="ruc" placeholder="RUC" value={form.ruc} onChange={handleChange} className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500" />
-          <input name="direccion" placeholder="Dirección" value={form.direccion} onChange={handleChange} className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500" />
-          <input name="telefono" placeholder="Teléfono empresa" value={form.telefono} onChange={handleChange} className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500" />
-          <input type="email" name="correo" placeholder="Correo empresa" value={form.correo} onChange={handleChange} className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 md:col-span-2" />
+              <div className="flex flex-col gap-1">
+                <label className="text-[13px] font-medium text-[#606266]">RUC</label>
+                <input
+                  name="ruc"
+                  value={form.ruc}
+                  onChange={handleChange}
+                  className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
 
-          <div className="md:col-span-2">
-            <label className="text-sm mb-1 block">Estado</label>
-            <select name="estado" value={String(form.estado)} onChange={handleChange} className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500">
-              <option value="true">Activo</option>
-              <option value="false">Inactivo</option>
-            </select>
+              <div className="flex flex-col gap-1">
+                <label className="text-[13px] font-medium text-[#606266]">Teléfono empresa</label>
+                <input
+                  name="telefono"
+                  value={form.telefono}
+                  onChange={handleChange}
+                  className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+
+              <div className="col-span-2 flex flex-col gap-1">
+                <label className="text-[13px] font-medium text-[#606266]">Dirección</label>
+                <input
+                  name="direccion"
+                  value={form.direccion}
+                  onChange={handleChange}
+                  className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+
+              <div className="col-span-2 flex flex-col gap-1">
+                <label className="text-[13px] font-medium text-[#606266]">Correo empresa</label>
+                <input
+                  type="email"
+                  name="correo"
+                  value={form.correo}
+                  onChange={handleChange}
+                  className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+
+              <div className="col-span-2 flex flex-col gap-1">
+                <label className="text-[13px] font-medium text-[#606266]">Estado</label>
+                <select
+                  name="estado"
+                  value={String(form.estado)}
+                  onChange={handleChange}
+                  className="rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                >
+                  <option value="true">Activo</option>
+                  <option value="false">Inactivo</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           {error && (
-            <div className="md:col-span-2 rounded bg-red-50 px-3 py-2 text-sm text-red-600">
+            <div className="rounded bg-red-50 p-3 text-sm text-red-600">
               {error}
             </div>
           )}
 
-          <div className="mt-4 flex justify-end gap-3 md:col-span-2">
-            <button type="button" onClick={onClose} className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Cancelar</button>
-            <button type="submit" disabled={isLoading} className="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50">
-              {isLoading ? 'Actualizando...' : 'Actualizar empresa'}
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50 transition-colors"
+            >
+              {isLoading ? 'Actualizando...' : 'Guardar'}
             </button>
           </div>
         </form>

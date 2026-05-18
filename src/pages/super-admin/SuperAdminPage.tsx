@@ -5,11 +5,14 @@ import { RoleShell } from '../components/RoleShell'
 import { SuperAdminSidebar } from '../../components/layout/siderbars/SuperAdminSidebar'
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
+import { useWelcomeToast } from '../../components/ui/toast'
 
 export function SuperAdminPage() {
   const user = useStoredUser()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
+
+  useWelcomeToast()
 
   function handleLogout() {
     clearStoredUser()
@@ -19,6 +22,7 @@ export function SuperAdminPage() {
   return (
     <div className="flex min-h-screen bg-slate-100">
       <SuperAdminSidebar collapsed={collapsed} />
+
       <div className="flex-1">
         <SuperAdminHeader
           user={user}
