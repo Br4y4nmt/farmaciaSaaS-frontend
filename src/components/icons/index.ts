@@ -3,6 +3,7 @@ export { default as EmpresaIcon } from './EmpresaIcon';
 export { default as VentasIcon } from './VentasIcon';
 export { default as PlanIcon } from './PlanIcon';
 export { default as InventoryIcon } from './InventoryIcon';
+export { default as ProductsIcon } from './ProductsIcon';
 export { default as CompraIcon } from './CompraIcon';
 export { default as ClienteIcon } from './ClienteIcon';
 export { default as ProveedorIcon } from './ProveedorIcon';

@@ -8,6 +8,8 @@ import UsersPage from '../../pages/super-admin/UsersPage'
 import { BranchesPage } from '../../pages/super-admin/BranchesPage'
 import PlansPage from '../../pages/super-admin/PlansPage' 
 import SubscriptionsPage from '../../pages/super-admin/SubscriptionsPage'
+import ProductsPage from '../../pages/super-admin/ProductsPage'
+import CategoriesPage from '../../pages/super-admin/CategoriesPage'
 import { CajeroPage } from '../../pages/cajero/CajeroPage'
 import { ContadorPage } from '../../pages/contador/ContadorPage'
 import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
@@ -52,6 +54,16 @@ export function AppRoutes() {
         <Route
           path="/super-admin/planes"
           element={<PlansPage />}
+        />
+
+        <Route
+          path="/super-admin/productos"
+          element={<ProductsPage />}
+        />
+
+        <Route
+          path="/super-admin/productos/categorias"
+          element={<CategoriesPage />}
         />
 
       </Route>

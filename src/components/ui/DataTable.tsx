@@ -15,6 +15,7 @@ type DataTableProps<T> = {
   error?: string | null
   loadingMessage?: string
   emptyMessage?: string
+  toolbarContent?: ReactNode
 }
 
 export function DataTable<T>({
@@ -25,6 +26,7 @@ export function DataTable<T>({
   error = null,
   loadingMessage = 'Cargando datos...',
   emptyMessage = 'No hay registros disponibles',
+  toolbarContent,
 }: DataTableProps<T>) {
   return (
     <div className="overflow-x-auto rounded-lg border border-slate-100">
@@ -32,9 +34,15 @@ export function DataTable<T>({
         <h2 className="text-xl font-medium text-white">{title}</h2>
       </div>
 
+      {toolbarContent && (
+        <div className="bg-white px-6 py-4">
+          {toolbarContent}
+        </div>
+      )}
+
       <table className="w-full bg-white">
-        <thead>
-          <tr className="border-b border-slate-100">
+        <thead className="border-b border-slate-100">
+          <tr>
             {columns.map((column) => (
               <th
                 key={String(column.key)}
