@@ -14,3 +14,4 @@ export { default as SecurityIcon } from './SecurityIcon';
 export { default as SettingsIcon } from './SettingsIcon';
 export { default as SupportIcon } from './SupportIcon';
 export { default as CloseIcon } from './CloseIcon';
+export { default as ExportIcon } from './ExportIcon';

@@ -10,6 +10,8 @@ import PlansPage from '../../pages/super-admin/PlansPage'
 import SubscriptionsPage from '../../pages/super-admin/SubscriptionsPage'
 import ProductsPage from '../../pages/super-admin/ProductsPage'
 import CategoriesPage from '../../pages/super-admin/CategoriesPage'
+import LaboratoriesPage from '../../pages/super-admin/LaboratoriesPage'
+import BrandsPage from '../../pages/super-admin/BrandsPage'
 import { CajeroPage } from '../../pages/cajero/CajeroPage'
 import { ContadorPage } from '../../pages/contador/ContadorPage'
 import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
@@ -64,6 +66,14 @@ export function AppRoutes() {
         <Route
           path="/super-admin/productos/categorias"
           element={<CategoriesPage />}
+        />
+        <Route
+          path="/super-admin/productos/laboratorios"
+          element={<LaboratoriesPage />}
+        />
+        <Route
+          path="/super-admin/productos/marcas"
+          element={<BrandsPage />}
         />
 
       </Route>

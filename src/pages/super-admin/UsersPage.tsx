@@ -40,11 +40,6 @@ export function UsersPage() {
     navigate('/login', { replace: true })
   }
 
-  function handleNew() {
-    setSelectedEmpresa(null)
-    setIsCreateModalOpen(true)
-  }
-
   function handleCreateUserByEmpresa(
     empresa: EmpresaUsuariosResumen
   ) {
