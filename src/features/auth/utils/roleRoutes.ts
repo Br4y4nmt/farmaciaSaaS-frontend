@@ -18,6 +18,8 @@ export const roleRoutesById: Record<number, string> = {
   7: ROLE_PATHS.CONTADOR,
 }
 
-export function getRoleRoute(rolId: number) {
+export function getRoleRoute(
+  rolId: keyof typeof roleRoutesById
+) {
   return roleRoutesById[rolId] ?? '/login'
 }

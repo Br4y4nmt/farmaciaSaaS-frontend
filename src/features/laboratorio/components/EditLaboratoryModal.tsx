@@ -106,7 +106,7 @@ export default function EditLaboratoryModal({
           <button
             type="button"
             onClick={handleClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            className="cursor-pointer text-slate-400 hover:text-slate-600 transition-colors"
           >
             <CloseIcon />
           </button>
@@ -165,14 +165,14 @@ export default function EditLaboratoryModal({
             <button
               type="button"
               onClick={handleClose}
-              className="rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+              className="cursor-pointer rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
+              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
             >
               {isLoading ? 'Guardando...' : 'Guardar'}
             </button>

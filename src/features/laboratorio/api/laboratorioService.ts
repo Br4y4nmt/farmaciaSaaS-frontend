@@ -11,12 +11,15 @@ export async function createLaboratorio(data: CreateLaboratorioDto) {
 }
 
 export async function getLaboratorios(
-  empresaId: number,
-  params?: { page?: number; limit?: number; estado?: boolean; nombre?: string }
+  params?: {
+    page?: number
+    limit?: number
+    estado?: boolean
+    nombre?: string
+  }
 ): Promise<GetLaboratoriosResponse> {
   const response = await api.get('/laboratorios', {
     params: {
-      empresa_id: empresaId,
       limit: 100,
       ...params,
     },

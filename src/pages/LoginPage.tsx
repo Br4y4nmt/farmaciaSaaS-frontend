@@ -29,7 +29,6 @@ export function LoginPage() {
 }
   return (
     <div className="min-h-screen bg-white flex">
-      {/* Image side — ~60% of screen */}
       <div className="hidden lg:block lg:w-[60%] relative">
         <img
           src="/images/login.png"
@@ -38,10 +37,8 @@ export function LoginPage() {
         />
       </div>
 
-      {/* Form side — ~40% of screen */}
       <div className="w-full lg:w-[40%] flex items-center justify-center px-8 py-10 relative">
 
-        {/* Logo esquina superior derecha del panel */}
         <div className="absolute top-6 right-8">
           <img
             src="/images/logo.png"

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SuperAdminHeader } from '../../components/layout/headers/SuperAdminHeader'
-import { SuperAdminSidebar } from '../../components/layout/siderbars/SuperAdminSidebar'
+import { AdminEmpresaHeader } from '../../components/layout/headers/AdminEmpresaHeader'
+import { AdminEmpresaSidebar } from '../../components/layout/siderbars/AdminEmpresaSidebar'
 import { DataTable } from '../../components/ui/DataTable'
 import type { DataTableColumn } from '../../components/ui/DataTable'
 import { PageHeader } from '../../components/ui/PageHeader'
@@ -119,14 +119,14 @@ function CategoriesPage() {
       render: (category) => (
         <div className="flex items-center gap-2">
           <button
-            className="rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
+            className="cursor-pointer rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
             type="button"
             onClick={() => handleEdit(category.categoria)}
           >
             Editar
           </button>
           <button
-            className="rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700"
+            className="cursor-pointer rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700"
             type="button"
             onClick={() => handleDelete(category)}
           >
@@ -149,10 +149,10 @@ function CategoriesPage() {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <SuperAdminSidebar collapsed={collapsed} />
+      <AdminEmpresaSidebar collapsed={collapsed} />
 
       <div className="flex flex-1 flex-col min-w-0">
-        <SuperAdminHeader
+        <AdminEmpresaHeader
           user={user}
           onLogout={handleLogout}
           collapsed={collapsed}
@@ -167,7 +167,7 @@ function CategoriesPage() {
           actions={
           <button
             onClick={handleExport}
-            className="flex items-center gap-2 rounded-sm border border-slate-700 bg-slate-900 px-2 py-1.5 text-[12px] font-normal text-white transition hover:bg-slate-800"
+            className="cursor-pointer flex items-center gap-2 rounded-sm border border-slate-700 bg-slate-900 px-2 py-1.5 text-[12px] font-normal text-white transition hover:bg-slate-800"
           >
             <ExportIcon />
 

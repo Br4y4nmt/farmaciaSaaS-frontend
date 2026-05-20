@@ -1,5 +1,8 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { CloseIcon } from '../../../components/icons'
+import { useCategorias } from '../../categoria/hooks/useCategorias'
+import { useStoredUser } from '../../auth/hooks/useStoredUser'
+
 
 type Props = {
   isOpen: boolean
@@ -75,6 +78,11 @@ export default function CreateProductModal({
   const [error, setError] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const user = useStoredUser()
+  const {
+    categorias,
+    isLoading: isLoadingCategorias,
+  } = useCategorias(user?.empresa_id)
 
   if (!isOpen) return null
 
@@ -168,7 +176,7 @@ export default function CreateProductModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 transition-colors hover:text-slate-600"
+            className="cursor-pointer text-slate-400 transition-colors hover:text-slate-600"
           >
             <CloseIcon />
           </button>
@@ -238,11 +246,20 @@ export default function CreateProductModal({
                 name="categoria_id"
                 value={form.categoria_id}
                 onChange={handleChange}
+                disabled={isLoadingCategorias}
                 options={[
-                  ['', 'Seleccionar'],
-                  ['1', 'Analgésicos'],
-                  ['2', 'Antibióticos'],
-                  ['3', 'Vitaminas'],
+                  [
+                    '',
+                    isLoadingCategorias
+                      ? 'Cargando categorías...'
+                      : 'Seleccionar categoría',
+                  ],
+                  ...categorias.map((categoria) => [
+                    String(categoria.id),
+                    categoria.categoria_padre
+                      ? `${categoria.categoria_padre.nombre} → ${categoria.nombre}`
+                      : categoria.nombre,
+                  ] as [string, string]),
                 ]}
               />
 
@@ -472,14 +489,14 @@ export default function CreateProductModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+              className="cursor-pointer rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              className="rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
             >
               Guardar
             </button>
@@ -552,12 +569,14 @@ function Select({
   value,
   onChange,
   options,
+  disabled = false,
 }: {
   label: string
   name: string
   value: string
   onChange: (e: ChangeEvent<HTMLSelectElement>) => void
   options: [string, string][]
+  disabled?: boolean
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -568,7 +587,8 @@ function Select({
         name={name}
         value={value}
         onChange={onChange}
-        className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+        disabled={disabled}
+        className="cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
       >
         {options.map(([value, label]) => (
           <option key={value} value={value}>

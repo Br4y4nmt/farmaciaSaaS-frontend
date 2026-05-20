@@ -1,6 +1,5 @@
 export { default as DashboardIcon } from './DashboardIcon';
 export { default as EmpresaIcon } from './EmpresaIcon';
-export { default as VentasIcon } from './VentasIcon';
 export { default as PlanIcon } from './PlanIcon';
 export { default as InventoryIcon } from './InventoryIcon';
 export { default as ProductsIcon } from './ProductsIcon';
@@ -15,3 +14,5 @@ export { default as SettingsIcon } from './SettingsIcon';
 export { default as SupportIcon } from './SupportIcon';
 export { default as CloseIcon } from './CloseIcon';
 export { default as ExportIcon } from './ExportIcon';
+export { default as ShoppingBagIcon } from './ShoppingBagIcon';
+export { default as ImportIcon } from './ImportIcon';

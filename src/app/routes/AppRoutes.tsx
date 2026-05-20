@@ -1,22 +1,27 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+
 import { LoginPage } from '../../pages/LoginPage'
 import { NotFoundPage } from '../../pages/NotFoundPage'
-import { AdminEmpresaPage } from '../../pages/admin-empresa/AdminEmpresaPage'
+
 import { SuperAdminPage } from '../../pages/super-admin/SuperAdminPage'
 import CompanyPage from '../../pages/super-admin/CompanyPage'
 import UsersPage from '../../pages/super-admin/UsersPage'
 import { BranchesPage } from '../../pages/super-admin/BranchesPage'
-import PlansPage from '../../pages/super-admin/PlansPage' 
+import PlansPage from '../../pages/super-admin/PlansPage'
 import SubscriptionsPage from '../../pages/super-admin/SubscriptionsPage'
-import ProductsPage from '../../pages/super-admin/ProductsPage'
-import CategoriesPage from '../../pages/super-admin/CategoriesPage'
-import LaboratoriesPage from '../../pages/super-admin/LaboratoriesPage'
-import BrandsPage from '../../pages/super-admin/BrandsPage'
+
+import { AdminEmpresaPage } from '../../pages/admin-empresa/AdminEmpresaPage'
+import ProductsPage from '../../pages/admin-empresa/ProductsPage'
+import CategoriesPage from '../../pages/admin-empresa/CategoriesPage'
+import LaboratoriesPage from '../../pages/admin-empresa/LaboratoriesPage'
+import BrandsPage from '../../pages/admin-empresa/BrandsPage'
+
 import { CajeroPage } from '../../pages/cajero/CajeroPage'
 import { ContadorPage } from '../../pages/contador/ContadorPage'
 import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
 import { GerentePage } from '../../pages/gerente/GerentePage'
 import { InventarioPage } from '../../pages/inventario/InventarioPage'
+
 import { ROLE_PATHS } from '../../features/auth/utils/roleRoutes'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -24,10 +29,10 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
+
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute allowedRoles={[1]} />}>
-
         <Route
           path={ROLE_PATHS.SUPER_ADMIN}
           element={<SuperAdminPage />}
@@ -37,7 +42,7 @@ export function AppRoutes() {
           path="/super-admin/empresa"
           element={<CompanyPage />}
         />
-        
+
         <Route
           path="/super-admin/empresa/usuarios"
           element={<UsersPage />}
@@ -57,31 +62,32 @@ export function AppRoutes() {
           path="/super-admin/planes"
           element={<PlansPage />}
         />
-
-        <Route
-          path="/super-admin/productos"
-          element={<ProductsPage />}
-        />
-
-        <Route
-          path="/super-admin/productos/categorias"
-          element={<CategoriesPage />}
-        />
-        <Route
-          path="/super-admin/productos/laboratorios"
-          element={<LaboratoriesPage />}
-        />
-        <Route
-          path="/super-admin/productos/marcas"
-          element={<BrandsPage />}
-        />
-
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={[2]} />}>
         <Route
           path={ROLE_PATHS.ADMIN_EMPRESA}
           element={<AdminEmpresaPage />}
+        />
+
+        <Route
+          path="/admin-empresa/productos"
+          element={<ProductsPage />}
+        />
+
+        <Route
+          path="/admin-empresa/productos/categorias"
+          element={<CategoriesPage />}
+        />
+
+        <Route
+          path="/admin-empresa/productos/laboratorios"
+          element={<LaboratoriesPage />}
+        />
+
+        <Route
+          path="/admin-empresa/productos/marcas"
+          element={<BrandsPage />}
         />
       </Route>
 

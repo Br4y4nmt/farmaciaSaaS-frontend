@@ -12,6 +12,14 @@ export const categoriaService = {
     return data.data
   },
 
+  async createPadre(payload: {
+    nombre: string
+    descripcion: string | null
+  }) {
+    const { data } = await api.post('/categorias/padre', payload)
+    return data.data
+  },
+
   async getRaiz(empresaId: number): Promise<GetCategoriasRaizResponse> {
     const { data } = await api.get('/categorias/raiz', {
       params: {
@@ -44,3 +52,4 @@ export const categoriaService = {
     return data.data ?? data
   },
 }
+  
