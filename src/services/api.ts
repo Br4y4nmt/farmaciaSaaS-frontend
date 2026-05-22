@@ -7,7 +7,6 @@ export const api = axios.create({
   },
 })
 
-// Adjunta el token JWT en cada request automáticamente
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {
@@ -16,7 +15,6 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Si el backend responde 401, limpia la sesión
 api.interceptors.response.use(
   (response) => response,
   (error) => {

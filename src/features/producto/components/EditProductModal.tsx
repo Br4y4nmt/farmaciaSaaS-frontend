@@ -1,14 +1,16 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { CloseIcon } from '../../../components/icons'
-import { useCategorias } from '../../categoria/hooks/useCategorias'
 import { InfoTooltip } from '../../../components/ui/InfoTooltip'
 import { useStoredUser } from '../../auth/hooks/useStoredUser'
+import { getImageUrl } from '../../../utils/getImageUrl'
+import { useCategorias } from '../../categoria/hooks/useCategorias'
 import { useLaboratorios } from '../../laboratorio/hooks/useLaboratorios'
 import { useMarcas } from '../../marca/hooks/useMarcas'
-import { useCreateProducto } from '../hooks/useCreateProducto'
+import type { Producto } from '../types/producto.types'
 
 type Props = {
   isOpen: boolean
+  product: Producto | null
   onClose: () => void
   onSuccess?: () => void
 }
@@ -67,8 +69,9 @@ const initialForm: FormData = {
   estado: true,
 }
 
-export default function CreateProductModal({
+export default function EditProductModal({
   isOpen,
+  product,
   onClose,
   onSuccess,
 }: Props) {
@@ -101,322 +104,346 @@ export default function CreateProductModal({
     estado: true,
   })
 
-  const {
-    crearProducto,
-    isLoading: isCreatingProducto,
-    error: createError,
-    setError: setCreateError,
-  } = useCreateProducto()
+  useEffect(() => {
+    if (!product || !isOpen) return
 
-  if (!isOpen) return null
+    setForm({
+      categoria_id: product.categoria_id ? String(product.categoria_id) : '',
+      laboratorio_id: product.laboratorio_id ? String(product.laboratorio_id) : '',
+      marca_id: product.marca_id ? String(product.marca_id) : '',
+      codigo_barras: product.codigo_barras || '',
+      codigo_sunat: product.codigo_sunat || '',
+      nombre_generico: product.nombre_generico || '',
+      nombre_comercial: product.nombre_comercial || '',
+      descripcion: product.descripcion || '',
+      registro_sanitario: product.registro_sanitario || '',
+      forma_farmaceutica: product.forma_farmaceutica || '',
+      concentracion: product.concentracion || '',
+      presentacion: product.presentacion || '',
+      unidad_medida: product.unidad_medida || '',
+      principio_activo: product.principio_activo || '',
+      requiere_receta: Boolean(product.requiere_receta),
+      es_controlado: Boolean(product.es_controlado),
+      es_fraccionable: Boolean(product.es_fraccionable),
+      precio_compra: String(product.precio_compra ?? ''),
+      precio_venta: String(product.precio_venta ?? ''),
+      stock_minimo: String(product.stock_minimo ?? ''),
+      stock_maximo: String(product.stock_maximo ?? ''),
+      afecto_igv: Boolean(product.afecto_igv),
+      estado: Boolean(product.estado),
+    })
 
-      function handleChange(
-        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-      ) {
-        const { name, value, type } = e.target
+    setImageFile(null)
+    setImagePreview(getImageUrl(product.imagen_url))
+    setActiveSection('general')
+    setError(null)
+  }, [product, isOpen])
 
-        const checked =
-          type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined
+  if (!isOpen || !product) return null
 
-        setForm((prev) => ({
-          ...prev,
-          [name]: type === 'checkbox' ? checked : value,
-        }))
+  function handleChange(
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) {
+    const { name, value, type } = e.target
 
-        if (error) setError(null)
-        if (createError) setCreateError(null)
-      }
+    const checked =
+      type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined
 
-      function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0]
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
 
-        if (!file) return
+    if (error) setError(null)
+  }
 
-        if (!file.type.startsWith('image/')) {
-          setError('Solo se permiten archivos de imagen.')
-          return
-        }
+  function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
 
-        setImageFile(file)
-        setImagePreview(URL.createObjectURL(file))
-        setError(null)
-      }
+    if (!file) return
 
-      function handleRemoveImage() {
-        setImageFile(null)
-        setImagePreview(null)
-      }
-
-      function handleSectionChange(section: ActiveSection) {
-        setError(null)
-        setActiveSection(section)
-      }
-
-    function validateForm(): {
-      section: ActiveSection
-      message: string
-    } | null {
-      if (!form.nombre_comercial.trim()) {
-        return {
-          section: 'general',
-          message: 'Completa el campo: Nombre comercial.',
-        }
-      }
-
-      if (!form.nombre_generico.trim()) {
-        return {
-          section: 'general',
-          message: 'Completa el campo: Nombre genérico.',
-        }
-      }
-
-      if (!form.categoria_id) {
-        return {
-          section: 'general',
-          message: 'Selecciona una categoría.',
-        }
-      }
-
-      if (!form.laboratorio_id) {
-        return {
-          section: 'general',
-          message: 'Selecciona un laboratorio.',
-        }
-      }
-
-      if (!form.marca_id) {
-        return {
-          section: 'general',
-          message: 'Selecciona una marca.',
-        }
-      }
-
-      if (!imageFile) {
-        return {
-          section: 'general',
-          message: 'Selecciona una imagen del producto.',
-        }
-      }
-
-      if (!form.descripcion.trim()) {
-        return {
-          section: 'general',
-          message: 'Completa el campo: Descripción.',
-        }
-      }
-
-      if (
-        form.codigo_barras.trim() &&
-        !/^\d{8,14}$/.test(form.codigo_barras.trim())
-      ) {
-        return {
-          section: 'general',
-          message: 'El código de barras debe contener entre 8 y 14 dígitos.',
-        }
-      }
-
-      if (!form.principio_activo.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Principio activo.',
-        }
-      }
-
-      if (!form.concentracion.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Concentración.',
-        }
-      }
-
-      if (!form.presentacion.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Presentación.',
-        }
-      }
-
-      if (!form.unidad_medida.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Unidad de medida.',
-        }
-      }
-
-      if (!form.forma_farmaceutica.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Forma farmacéutica.',
-        }
-      }
-
-      if (!form.registro_sanitario.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Registro sanitario.',
-        }
-      }
-
-      if (!form.precio_compra.trim()) {
-        return {
-          section: 'precios',
-          message: 'Completa el campo: Precio compra.',
-        }
-      }
-
-      if (!form.precio_venta.trim()) {
-        return {
-          section: 'precios',
-          message: 'Completa el campo: Precio venta.',
-        }
-      }
-
-      if (!form.stock_minimo.trim()) {
-        return {
-          section: 'precios',
-          message: 'Completa el campo: Stock mínimo.',
-        }
-      }
-
-      if (!form.stock_maximo.trim()) {
-        return {
-          section: 'precios',
-          message: 'Completa el campo: Stock máximo.',
-        }
-      }
-
-      if (Number(form.precio_compra) < 0) {
-        return {
-          section: 'precios',
-          message: 'El precio compra no puede ser negativo.',
-        }
-      }
-
-      if (Number(form.precio_venta) <= 0) {
-        return {
-          section: 'precios',
-          message: 'El precio venta debe ser mayor a 0.',
-        }
-      }
-
-      if (Number(form.stock_minimo) < 0) {
-        return {
-          section: 'precios',
-          message: 'El stock mínimo no puede ser negativo.',
-        }
-      }
-
-      if (Number(form.stock_maximo) < 0) {
-        return {
-          section: 'precios',
-          message: 'El stock máximo no puede ser negativo.',
-        }
-      }
-
-      if (Number(form.stock_maximo) < Number(form.stock_minimo)) {
-        return {
-          section: 'precios',
-          message: 'El stock máximo no puede ser menor al stock mínimo.',
-        }
-      }
-
-      return null
+    if (!file.type.startsWith('image/')) {
+      setError('Solo se permiten archivos de imagen.')
+      return
     }
 
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    setError(null)
+  }
 
-    async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-      e.preventDefault()
+  function handleRemoveImage() {
+    setImageFile(null)
+    setImagePreview(null)
+  }
 
-      const validationError = validateForm()
+  function handleSectionChange(section: ActiveSection) {
+    setError(null)
+    setActiveSection(section)
+  }
 
-      if (validationError) {
-        setActiveSection(validationError.section)
-        setError(validationError.message)
-        return
+  function validateForm(): {
+    section: ActiveSection
+    message: string
+  } | null {
+    if (!form.nombre_comercial.trim()) {
+      return {
+        section: 'general',
+        message: 'Completa el campo: Nombre comercial.',
       }
-
-      const payload = new FormData()
-
-      if (form.categoria_id) {
-        payload.append('categoria_id', form.categoria_id)
-      }
-
-      if (form.laboratorio_id) {
-        payload.append('laboratorio_id', form.laboratorio_id)
-      }
-
-      if (form.marca_id) {
-        payload.append('marca_id', form.marca_id)
-      }
-
-      if (form.codigo_barras.trim()) {
-        payload.append('codigo_barras', form.codigo_barras.trim())
-      }
-
-      if (form.codigo_sunat.trim()) {
-        payload.append('codigo_sunat', form.codigo_sunat.trim())
-      }
-
-      if (form.nombre_generico.trim()) {
-        payload.append('nombre_generico', form.nombre_generico.trim())
-      }
-
-      payload.append('nombre_comercial', form.nombre_comercial.trim())
-
-      if (form.descripcion.trim()) {
-        payload.append('descripcion', form.descripcion.trim())
-      }
-
-      if (form.registro_sanitario.trim()) {
-        payload.append('registro_sanitario', form.registro_sanitario.trim())
-      }
-
-      if (form.forma_farmaceutica.trim()) {
-        payload.append('forma_farmaceutica', form.forma_farmaceutica.trim())
-      }
-
-      if (form.concentracion.trim()) {
-        payload.append('concentracion', form.concentracion.trim())
-      }
-
-      if (form.presentacion.trim()) {
-        payload.append('presentacion', form.presentacion.trim())
-      }
-
-      if (form.unidad_medida.trim()) {
-        payload.append('unidad_medida', form.unidad_medida.trim())
-      }
-
-      if (form.principio_activo.trim()) {
-        payload.append('principio_activo', form.principio_activo.trim())
-      }
-
-      payload.append('requiere_receta', String(form.requiere_receta))
-      payload.append('es_controlado', String(form.es_controlado))
-      payload.append('es_fraccionable', String(form.es_fraccionable))
-      payload.append('afecto_igv', String(form.afecto_igv))
-      payload.append('estado', String(form.estado))
-
-      payload.append('precio_compra', String(Number(form.precio_compra || 0)))
-      payload.append('precio_venta', String(Number(form.precio_venta || 0)))
-      payload.append('stock_minimo', String(Number(form.stock_minimo || 0)))
-      payload.append('stock_maximo', String(Number(form.stock_maximo || 0)))
-
-      if (imageFile) {
-        payload.append('imagen', imageFile)
-      }
-
-      const producto = await crearProducto(payload)
-
-      if (!producto) return
-
-      setForm(initialForm)
-      setImageFile(null)
-      setImagePreview(null)
-      setActiveSection('general')
-      onClose()
-      onSuccess?.()
     }
+
+    if (!form.nombre_generico.trim()) {
+      return {
+        section: 'general',
+        message: 'Completa el campo: Nombre genérico.',
+      }
+    }
+
+    if (!form.categoria_id) {
+      return {
+        section: 'general',
+        message: 'Selecciona una categoría.',
+      }
+    }
+
+    if (!form.laboratorio_id) {
+      return {
+        section: 'general',
+        message: 'Selecciona un laboratorio.',
+      }
+    }
+
+    if (!form.marca_id) {
+      return {
+        section: 'general',
+        message: 'Selecciona una marca.',
+      }
+    }
+
+    if (!imagePreview && !imageFile) {
+      return {
+        section: 'general',
+        message: 'Selecciona una imagen del producto.',
+      }
+    }
+
+    if (!form.descripcion.trim()) {
+      return {
+        section: 'general',
+        message: 'Completa el campo: Descripción.',
+      }
+    }
+
+    if (
+      form.codigo_barras.trim() &&
+      !/^\d{8,14}$/.test(form.codigo_barras.trim())
+    ) {
+      return {
+        section: 'general',
+        message: 'El código de barras debe contener entre 8 y 14 dígitos.',
+      }
+    }
+
+    if (!form.principio_activo.trim()) {
+      return {
+        section: 'farmaceutico',
+        message: 'Completa el campo: Principio activo.',
+      }
+    }
+
+    if (!form.concentracion.trim()) {
+      return {
+        section: 'farmaceutico',
+        message: 'Completa el campo: Concentración.',
+      }
+    }
+
+    if (!form.presentacion.trim()) {
+      return {
+        section: 'farmaceutico',
+        message: 'Completa el campo: Presentación.',
+      }
+    }
+
+    if (!form.unidad_medida.trim()) {
+      return {
+        section: 'farmaceutico',
+        message: 'Completa el campo: Unidad de medida.',
+      }
+    }
+
+    if (!form.forma_farmaceutica.trim()) {
+      return {
+        section: 'farmaceutico',
+        message: 'Completa el campo: Forma farmacéutica.',
+      }
+    }
+
+    if (!form.registro_sanitario.trim()) {
+      return {
+        section: 'farmaceutico',
+        message: 'Completa el campo: Registro sanitario.',
+      }
+    }
+
+    if (!form.precio_compra.trim()) {
+      return {
+        section: 'precios',
+        message: 'Completa el campo: Precio compra.',
+      }
+    }
+
+    if (!form.precio_venta.trim()) {
+      return {
+        section: 'precios',
+        message: 'Completa el campo: Precio venta.',
+      }
+    }
+
+    if (!form.stock_minimo.trim()) {
+      return {
+        section: 'precios',
+        message: 'Completa el campo: Stock mínimo.',
+      }
+    }
+
+    if (!form.stock_maximo.trim()) {
+      return {
+        section: 'precios',
+        message: 'Completa el campo: Stock máximo.',
+      }
+    }
+
+    if (Number(form.precio_compra) < 0) {
+      return {
+        section: 'precios',
+        message: 'El precio compra no puede ser negativo.',
+      }
+    }
+
+    if (Number(form.precio_venta) <= 0) {
+      return {
+        section: 'precios',
+        message: 'El precio venta debe ser mayor a 0.',
+      }
+    }
+
+    if (Number(form.stock_minimo) < 0) {
+      return {
+        section: 'precios',
+        message: 'El stock mínimo no puede ser negativo.',
+      }
+    }
+
+    if (Number(form.stock_maximo) < 0) {
+      return {
+        section: 'precios',
+        message: 'El stock máximo no puede ser negativo.',
+      }
+    }
+
+    if (Number(form.stock_maximo) < Number(form.stock_minimo)) {
+      return {
+        section: 'precios',
+        message: 'El stock máximo no puede ser menor al stock mínimo.',
+      }
+    }
+
+    return null
+  }
+
+async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  e.preventDefault()
+
+  if (!product) {
+    setError('No se encontró el producto seleccionado.')
+    return
+  }
+
+  const validationError = validateForm()
+
+  if (validationError) {
+    setActiveSection(validationError.section)
+    setError(validationError.message)
+    return
+  }
+
+  const payload = new FormData()
+
+  if (form.categoria_id) {
+    payload.append('categoria_id', form.categoria_id)
+  }
+
+  if (form.laboratorio_id) {
+    payload.append('laboratorio_id', form.laboratorio_id)
+  }
+
+  if (form.marca_id) {
+    payload.append('marca_id', form.marca_id)
+  }
+
+  if (form.codigo_barras.trim()) {
+    payload.append('codigo_barras', form.codigo_barras.trim())
+  }
+
+  if (form.codigo_sunat.trim()) {
+    payload.append('codigo_sunat', form.codigo_sunat.trim())
+  }
+
+  if (form.nombre_generico.trim()) {
+    payload.append('nombre_generico', form.nombre_generico.trim())
+  }
+
+  payload.append('nombre_comercial', form.nombre_comercial.trim())
+
+  if (form.descripcion.trim()) {
+    payload.append('descripcion', form.descripcion.trim())
+  }
+
+  if (form.registro_sanitario.trim()) {
+    payload.append('registro_sanitario', form.registro_sanitario.trim())
+  }
+
+  if (form.forma_farmaceutica.trim()) {
+    payload.append('forma_farmaceutica', form.forma_farmaceutica.trim())
+  }
+
+  if (form.concentracion.trim()) {
+    payload.append('concentracion', form.concentracion.trim())
+  }
+
+  if (form.presentacion.trim()) {
+    payload.append('presentacion', form.presentacion.trim())
+  }
+
+  if (form.unidad_medida.trim()) {
+    payload.append('unidad_medida', form.unidad_medida.trim())
+  }
+
+  if (form.principio_activo.trim()) {
+    payload.append('principio_activo', form.principio_activo.trim())
+  }
+
+  payload.append('requiere_receta', String(form.requiere_receta))
+  payload.append('es_controlado', String(form.es_controlado))
+  payload.append('es_fraccionable', String(form.es_fraccionable))
+  payload.append('afecto_igv', String(form.afecto_igv))
+  payload.append('estado', String(form.estado))
+
+  payload.append('precio_compra', String(Number(form.precio_compra || 0)))
+  payload.append('precio_venta', String(Number(form.precio_venta || 0)))
+  payload.append('stock_minimo', String(Number(form.stock_minimo || 0)))
+  payload.append('stock_maximo', String(Number(form.stock_maximo || 0)))
+
+  if (imageFile) {
+    payload.append('imagen', imageFile)
+  }
+
+  console.log('editar producto', product.id, payload)
+
+  onSuccess?.()
+}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -425,7 +452,7 @@ export default function CreateProductModal({
       <div className="relative w-full max-w-3xl rounded-sm border border-slate-200 bg-white shadow-xl">
         <div className="flex items-center justify-between px-6 py-4">
           <h3 className="text-xl font-medium text-slate-800">
-            Crear producto
+            Editar producto
           </h3>
 
           <button
@@ -488,7 +515,6 @@ export default function CreateProductModal({
                   name="nombre_comercial"
                   value={form.nombre_comercial}
                   onChange={handleChange}
-                  required
                 />
               </div>
 
@@ -560,7 +586,9 @@ export default function CreateProductModal({
                 </label>
 
                 <label className="flex min-h-[90px] cursor-pointer flex-col items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500 transition hover:border-sky-500 hover:text-sky-600">
-                  <span className="font-medium">Seleccionar imagen</span>
+                  <span className="font-medium">
+                    {imagePreview ? 'Cambiar imagen' : 'Seleccionar imagen'}
+                  </span>
 
                   <span className="text-xs text-slate-400">
                     PNG, JPG, JPEG o WEBP
@@ -584,11 +612,13 @@ export default function CreateProductModal({
 
                     <div className="flex-1">
                       <p className="text-sm font-medium text-slate-700">
-                        {imageFile?.name}
+                        {imageFile?.name || 'Imagen actual del producto'}
                       </p>
 
                       <p className="text-xs text-slate-500">
-                        Imagen seleccionada correctamente
+                        {imageFile
+                          ? 'Nueva imagen seleccionada'
+                          : 'Imagen guardada actualmente'}
                       </p>
                     </div>
 
@@ -758,9 +788,9 @@ export default function CreateProductModal({
             </div>
           )}
 
-         {(error || createError) && (
+          {error && (
             <div className="rounded bg-red-50 p-3 text-sm text-red-600">
-              {error || createError}
+              {error}
             </div>
           )}
 
@@ -775,10 +805,9 @@ export default function CreateProductModal({
 
             <button
               type="submit"
-              disabled={isCreatingProducto}
-              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
             >
-              {isCreatingProducto ? 'Guardando...' : 'Guardar'}
+              Guardar cambios
             </button>
           </div>
         </form>
@@ -817,7 +846,6 @@ function Input({
   value,
   onChange,
   type = 'text',
-  required = false,
   info,
 }: {
   label: string
@@ -825,7 +853,6 @@ function Input({
   value: string
   onChange: (e: ChangeEvent<HTMLInputElement>) => void
   type?: string
-  required?: boolean
   info?: string
 }) {
   return (
@@ -840,7 +867,6 @@ function Input({
         name={name}
         value={value}
         onChange={onChange}
-        required={required}
         className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
       />
     </div>

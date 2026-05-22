@@ -1,11 +1,12 @@
 export type Producto = {
   id: number
   empresa_id: number
+
   categoria_id: number | null
   laboratorio_id: number | null
   marca_id: number | null
 
-  codigo: string
+  codigo: string | null
   codigo_barras: string | null
   codigo_sunat?: string | null
 
@@ -33,6 +34,29 @@ export type Producto = {
 
   imagen_url?: string | null
 
+  categoria?: {
+    id: number
+    nombre: string
+  } | null
+
+  laboratorio?: {
+    id: number
+    nombre: string
+  } | null
+
+  marca?: {
+    id: number
+    nombre: string
+  } | null
+
   created_at?: string
   updated_at?: string
+}
+
+export type GetProductosResponse = {
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+  productos: Producto[]
 }
