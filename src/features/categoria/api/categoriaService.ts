@@ -31,11 +31,20 @@ export const categoriaService = {
     return data.data
   },
 
-  async getAll(empresaId: number): Promise<GetCategoriasResponse> {
+  async getAll(
+    empresaId: number,
+    params?: {
+      page?: number
+      limit?: number
+      estado?: boolean
+      nombre?: string
+    },
+  ): Promise<GetCategoriasResponse> {
     const { data } = await api.get('/categorias', {
       params: {
         empresa_id: empresaId,
         limit: 100,
+        ...params,
       },
     })
 

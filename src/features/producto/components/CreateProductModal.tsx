@@ -2,6 +2,9 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { CloseIcon } from '../../../components/icons'
 import { useCategorias } from '../../categoria/hooks/useCategorias'
 import { useStoredUser } from '../../auth/hooks/useStoredUser'
+import { useLaboratorios } from '../../laboratorio/hooks/useLaboratorios'
+import { useMarcas } from '../../marca/hooks/useMarcas'
+import { useCreateProducto } from '../hooks/useCreateProducto'
 
 
 type Props = {
@@ -13,11 +16,9 @@ type Props = {
 type ActiveSection = 'general' | 'farmaceutico' | 'precios' | 'control'
 
 type FormData = {
-  empresa_id: string
   categoria_id: string
   laboratorio_id: string
   marca_id: string
-  codigo: string
   codigo_barras: string
   codigo_sunat: string
   nombre_generico: string
@@ -41,11 +42,9 @@ type FormData = {
 }
 
 const initialForm: FormData = {
-  empresa_id: '',
   categoria_id: '',
   laboratorio_id: '',
   marca_id: '',
-  codigo: '',
   codigo_barras: '',
   codigo_sunat: '',
   nombre_generico: '',
@@ -78,90 +77,181 @@ export default function CreateProductModal({
   const [error, setError] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+
   const user = useStoredUser()
+
   const {
     categorias,
     isLoading: isLoadingCategorias,
-  } = useCategorias(user?.empresa_id)
+  } = useCategorias(user?.empresa_id, {
+    estado: true,
+  })
+
+  const {
+    laboratorios,
+    isLoading: isLoadingLaboratorios,
+  } = useLaboratorios({
+    estado: true,
+  })
+
+  const {
+    marcas,
+    isLoading: isLoadingMarcas,
+  } = useMarcas(user?.empresa_id, {
+    estado: true,
+  })
+
+  const {
+    crearProducto,
+    isLoading: isCreatingProducto,
+    error: createError,
+    setError: setCreateError,
+  } = useCreateProducto()
 
   if (!isOpen) return null
 
-  function handleChange(
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-  ) {
-    const { name, value, type } = e.target
-    const checked =
-      type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined
+      function handleChange(
+        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+      ) {
+        const { name, value, type } = e.target
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
+        const checked =
+          type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined
 
-    if (error) setError(null)
-  }
+        setForm((prev) => ({
+          ...prev,
+          [name]: type === 'checkbox' ? checked : value,
+        }))
 
-  function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+        if (error) setError(null)
+        if (createError) setCreateError(null)
+      }
 
-    if (!file) return
+      function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0]
 
-    if (!file.type.startsWith('image/')) {
-      setError('Solo se permiten archivos de imagen.')
-      return
-    }
+        if (!file) return
 
-    setImageFile(file)
-    setImagePreview(URL.createObjectURL(file))
-    setError(null)
-  }
+        if (!file.type.startsWith('image/')) {
+          setError('Solo se permiten archivos de imagen.')
+          return
+        }
 
-  function handleRemoveImage() {
-    setImageFile(null)
-    setImagePreview(null)
-  }
+        setImageFile(file)
+        setImagePreview(URL.createObjectURL(file))
+        setError(null)
+      }
 
-  function handleSectionChange(section: ActiveSection) {
-    if (section !== 'general' && !form.nombre_comercial.trim()) {
-      setError('Completa el campo: Nombre comercial.')
+      function handleRemoveImage() {
+        setImageFile(null)
+        setImagePreview(null)
+      }
+
+      function handleSectionChange(section: ActiveSection) {
+        setError(null)
+        setActiveSection(section)
+      }
+
+    async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+      e.preventDefault()
+
+      if (!form.nombre_comercial.trim()) {
+        setError('El nombre comercial es obligatorio.')
+        setActiveSection('general')
+        return
+      }
+
+      if (
+        form.codigo_barras.trim() &&
+        !/^\d{8,14}$/.test(form.codigo_barras.trim())
+      ) {
+        setError('El código de barras debe contener entre 8 y 14 dígitos.')
+        setActiveSection('general')
+        return
+      }
+
+      const payload = new FormData()
+
+      if (form.categoria_id) {
+        payload.append('categoria_id', form.categoria_id)
+      }
+
+      if (form.laboratorio_id) {
+        payload.append('laboratorio_id', form.laboratorio_id)
+      }
+
+      if (form.marca_id) {
+        payload.append('marca_id', form.marca_id)
+      }
+
+      if (form.codigo_barras.trim()) {
+        payload.append('codigo_barras', form.codigo_barras.trim())
+      }
+
+      if (form.codigo_sunat.trim()) {
+        payload.append('codigo_sunat', form.codigo_sunat.trim())
+      }
+
+      if (form.nombre_generico.trim()) {
+        payload.append('nombre_generico', form.nombre_generico.trim())
+      }
+
+      payload.append('nombre_comercial', form.nombre_comercial.trim())
+
+      if (form.descripcion.trim()) {
+        payload.append('descripcion', form.descripcion.trim())
+      }
+
+      if (form.registro_sanitario.trim()) {
+        payload.append('registro_sanitario', form.registro_sanitario.trim())
+      }
+
+      if (form.forma_farmaceutica.trim()) {
+        payload.append('forma_farmaceutica', form.forma_farmaceutica.trim())
+      }
+
+      if (form.concentracion.trim()) {
+        payload.append('concentracion', form.concentracion.trim())
+      }
+
+      if (form.presentacion.trim()) {
+        payload.append('presentacion', form.presentacion.trim())
+      }
+
+      if (form.unidad_medida.trim()) {
+        payload.append('unidad_medida', form.unidad_medida.trim())
+      }
+
+      if (form.principio_activo.trim()) {
+        payload.append('principio_activo', form.principio_activo.trim())
+      }
+
+      payload.append('requiere_receta', String(form.requiere_receta))
+      payload.append('es_controlado', String(form.es_controlado))
+      payload.append('es_fraccionable', String(form.es_fraccionable))
+      payload.append('afecto_igv', String(form.afecto_igv))
+      payload.append('estado', String(form.estado))
+
+      payload.append('precio_compra', String(Number(form.precio_compra || 0)))
+      payload.append('precio_venta', String(Number(form.precio_venta || 0)))
+      payload.append('stock_minimo', String(Number(form.stock_minimo || 0)))
+      payload.append('stock_maximo', String(Number(form.stock_maximo || 0)))
+
+      if (imageFile) {
+        payload.append('imagen', imageFile)
+      }
+
+      const producto = await crearProducto(payload)
+
+      if (!producto) return
+
+      setForm(initialForm)
+      setImageFile(null)
+      setImagePreview(null)
       setActiveSection('general')
-      return
+      onClose()
+      onSuccess?.()
     }
-
-    setError(null)
-    setActiveSection(section)
-  }
-
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-
-    if (!form.nombre_comercial.trim()) {
-      setError('El nombre comercial es obligatorio.')
-      setActiveSection('general')
-      return
-    }
-
-    const payload = {
-      ...form,
-      imagen: imageFile,
-      empresa_id: Number(form.empresa_id),
-      categoria_id: form.categoria_id ? Number(form.categoria_id) : null,
-      laboratorio_id: form.laboratorio_id ? Number(form.laboratorio_id) : null,
-      marca_id: form.marca_id ? Number(form.marca_id) : null,
-      precio_compra: Number(form.precio_compra || 0),
-      precio_venta: Number(form.precio_venta || 0),
-      stock_minimo: Number(form.stock_minimo || 0),
-      stock_maximo: Number(form.stock_maximo || 0),
-    }
-
-    console.log('crear producto', payload)
-
-    setForm(initialForm)
-    setImageFile(null)
-    setImagePreview(null)
-    onClose()
-    onSuccess?.()
-  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -190,16 +280,19 @@ export default function CreateProductModal({
                 active={activeSection === 'general'}
                 onClick={() => handleSectionChange('general')}
               />
+
               <TabButton
                 label="Datos farmacéuticos"
                 active={activeSection === 'farmaceutico'}
                 onClick={() => handleSectionChange('farmaceutico')}
               />
+
               <TabButton
                 label="Precios y stock"
                 active={activeSection === 'precios'}
                 onClick={() => handleSectionChange('precios')}
               />
+
               <TabButton
                 label="Control"
                 active={activeSection === 'control'}
@@ -211,16 +304,16 @@ export default function CreateProductModal({
           {activeSection === 'general' && (
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Código interno"
-                name="codigo"
-                value={form.codigo}
+                label="Código de barras"
+                name="codigo_barras"
+                value={form.codigo_barras}
                 onChange={handleChange}
               />
 
               <Input
-                label="Código de barras"
-                name="codigo_barras"
-                value={form.codigo_barras}
+                label="Nombre genérico"
+                name="nombre_generico"
+                value={form.nombre_generico}
                 onChange={handleChange}
               />
 
@@ -233,13 +326,6 @@ export default function CreateProductModal({
                   required
                 />
               </div>
-
-              <Input
-                label="Nombre genérico"
-                name="nombre_generico"
-                value={form.nombre_generico}
-                onChange={handleChange}
-              />
 
               <Select
                 label="Categoría"
@@ -268,11 +354,18 @@ export default function CreateProductModal({
                 name="laboratorio_id"
                 value={form.laboratorio_id}
                 onChange={handleChange}
+                disabled={isLoadingLaboratorios}
                 options={[
-                  ['', 'Seleccionar'],
-                  ['1', 'Bayer'],
-                  ['2', 'Genfar'],
-                  ['3', 'Roche'],
+                  [
+                    '',
+                    isLoadingLaboratorios
+                      ? 'Cargando laboratorios...'
+                      : 'Seleccionar laboratorio',
+                  ],
+                  ...laboratorios.map((laboratorio) => [
+                    String(laboratorio.id),
+                    laboratorio.nombre,
+                  ] as [string, string]),
                 ]}
               />
 
@@ -281,11 +374,18 @@ export default function CreateProductModal({
                 name="marca_id"
                 value={form.marca_id}
                 onChange={handleChange}
+                disabled={isLoadingMarcas}
                 options={[
-                  ['', 'Seleccionar'],
-                  ['1', 'Panadol'],
-                  ['2', 'Apronax'],
-                  ['3', 'Dolocordralan'],
+                  [
+                    '',
+                    isLoadingMarcas
+                      ? 'Cargando marcas...'
+                      : 'Seleccionar marca',
+                  ],
+                  ...marcas.map((marca) => [
+                    String(marca.id),
+                    marca.nombre,
+                  ] as [string, string]),
                 ]}
               />
 
@@ -296,6 +396,7 @@ export default function CreateProductModal({
 
                 <label className="flex min-h-[90px] cursor-pointer flex-col items-center justify-center rounded border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500 transition hover:border-sky-500 hover:text-sky-600">
                   <span className="font-medium">Seleccionar imagen</span>
+
                   <span className="text-xs text-slate-400">
                     PNG, JPG, JPEG o WEBP
                   </span>
@@ -320,6 +421,7 @@ export default function CreateProductModal({
                       <p className="text-sm font-medium text-slate-700">
                         {imageFile?.name}
                       </p>
+
                       <p className="text-xs text-slate-500">
                         Imagen seleccionada correctamente
                       </p>
@@ -340,6 +442,7 @@ export default function CreateProductModal({
                 <label className="text-[13px] font-medium text-[#606266]">
                   Descripción
                 </label>
+
                 <textarea
                   name="descripcion"
                   value={form.descripcion}
@@ -479,9 +582,9 @@ export default function CreateProductModal({
             </div>
           )}
 
-          {error && (
+         {(error || createError) && (
             <div className="rounded bg-red-50 p-3 text-sm text-red-600">
-              {error}
+              {error || createError}
             </div>
           )}
 
@@ -496,9 +599,10 @@ export default function CreateProductModal({
 
             <button
               type="submit"
-              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+              disabled={isCreatingProducto}
+              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Guardar
+              {isCreatingProducto ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         </form>
@@ -551,6 +655,7 @@ function Input({
       <label className="text-[13px] font-medium text-[#606266]">
         {label}
       </label>
+
       <input
         type={type}
         name={name}
@@ -583,6 +688,7 @@ function Select({
       <label className="text-[13px] font-medium text-[#606266]">
         {label}
       </label>
+
       <select
         name={name}
         value={value}
@@ -620,6 +726,7 @@ function Checkbox({
         onChange={onChange}
         className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
       />
+
       {label}
     </label>
   )
