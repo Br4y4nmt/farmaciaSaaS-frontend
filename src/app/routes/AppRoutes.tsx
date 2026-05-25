@@ -24,6 +24,7 @@ import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
 import { GerentePage } from '../../pages/gerente/GerentePage'
 import { InventarioPage } from '../../pages/inventario/InventarioPage'
 import LotesPage from '../../pages/admin-empresa/LotesPage'
+import StockCriticoPage from '../../pages/admin-empresa/StockCriticoPage'
 import ProductosPorVencerPage from '../../pages/admin-empresa/ProductosPorVencerPage'
 import MovimientosStockPage from '../../pages/admin-empresa/MovimientosStockPage'
 import { ROLE_PATHS } from '../../features/auth/utils/roleRoutes'
@@ -117,6 +118,11 @@ export function AppRoutes() {
         <Route
           path="/admin-empresa/inventario/lotes"
           element={<LotesPage />}
+        />
+
+        <Route
+          path="/admin-empresa/inventario/stock-critico"
+          element={<StockCriticoPage />}
         />
 
         <Route
