@@ -9,19 +9,23 @@ import UsersPage from '../../pages/super-admin/UsersPage'
 import { BranchesPage } from '../../pages/super-admin/BranchesPage'
 import PlansPage from '../../pages/super-admin/PlansPage'
 import SubscriptionsPage from '../../pages/super-admin/SubscriptionsPage'
-
+import ComprasPage from '../../pages/admin-empresa/ComprasPage'
 import { AdminEmpresaPage } from '../../pages/admin-empresa/AdminEmpresaPage'
 import ProductsPage from '../../pages/admin-empresa/ProductsPage'
 import CategoriesPage from '../../pages/admin-empresa/CategoriesPage'
 import LaboratoriesPage from '../../pages/admin-empresa/LaboratoriesPage'
 import BrandsPage from '../../pages/admin-empresa/BrandsPage'
-
+import LocalesPage from '../../pages/admin-empresa/LocalesPage'
+import StockGeneralPage from '../../pages/admin-empresa/StockGeneralPage'
+import ProveedoresPage from '../../pages/admin-empresa/ProveedoresPage'
 import { CajeroPage } from '../../pages/cajero/CajeroPage'
 import { ContadorPage } from '../../pages/contador/ContadorPage'
 import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
 import { GerentePage } from '../../pages/gerente/GerentePage'
 import { InventarioPage } from '../../pages/inventario/InventarioPage'
-
+import LotesPage from '../../pages/admin-empresa/LotesPage'
+import ProductosPorVencerPage from '../../pages/admin-empresa/ProductosPorVencerPage'
+import MovimientosStockPage from '../../pages/admin-empresa/MovimientosStockPage'
 import { ROLE_PATHS } from '../../features/auth/utils/roleRoutes'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -88,6 +92,41 @@ export function AppRoutes() {
         <Route
           path="/admin-empresa/productos/marcas"
           element={<BrandsPage />}
+        />
+
+        <Route
+          path="/admin-empresa/usuarios-locales/locales"
+          element={<LocalesPage />}
+        />
+
+        <Route
+          path="/admin-empresa/stock-general"
+          element={<StockGeneralPage />}
+        />
+
+        <Route
+          path="/admin-empresa/proveedores"
+          element={<ProveedoresPage />}
+        />
+
+        <Route
+          path="/admin-empresa/compras"
+          element={<ComprasPage />}
+        />
+
+        <Route
+          path="/admin-empresa/inventario/lotes"
+          element={<LotesPage />}
+        />
+
+        <Route
+          path="/admin-empresa/inventario/productos-por-vencer"
+          element={<ProductosPorVencerPage />}
+        />
+
+        <Route
+          path="/admin-empresa/inventario/movimientos"
+          element={<MovimientosStockPage />}
         />
       </Route>
 

@@ -16,6 +16,7 @@ import {
   SecurityIcon,
   SettingsIcon,
   SupportIcon,
+  UsersIcon,
 } from '../../icons'
 
 type SidebarItem = {
@@ -54,9 +55,7 @@ const items: SidebarItem[] = [
       { label: 'Categorías', path: '/admin-empresa/productos/categorias' },
       { label: 'Laboratorios', path: '/admin-empresa/productos/laboratorios' },
       { label: 'Marcas', path: '/admin-empresa/productos/marcas' },
-      { label: 'Presentaciones', path: '/admin-empresa/productos/presentaciones' },
-      { label: 'Unidades de Medida', path: '/admin-empresa/productos/unidades-medida' },
-      { label: 'Principios Activos', path: '/admin-empresa/productos/principios-activos' },
+
       { label: 'Códigos de Barras', path: '/admin-empresa/productos/codigos-barras' },
       { label: 'Packs / Promociones', path: '/admin-empresa/productos/promociones' },
     ],
@@ -65,7 +64,7 @@ const items: SidebarItem[] = [
     label: 'Inventario',
     icon: <InventoryIcon />,
     submenu: [
-      { label: 'Stock General', path: '/admin-empresa/inventario/stock' },
+      { label: 'Stock General', path: '/admin-empresa/stock-general' },
       { label: 'Stock por Sucursal', path: '/admin-empresa/inventario/stock-sucursal' },
       { label: 'Lotes', path: '/admin-empresa/inventario/lotes' },
       { label: 'Kardex', path: '/admin-empresa/inventario/kardex' },
@@ -143,6 +142,14 @@ const items: SidebarItem[] = [
       { label: 'Validación de Recetas', path: '/admin-empresa/recetas' },
       { label: 'Historial de Recetas', path: '/admin-empresa/recetas/historial' },
       { label: 'Medicamentos Controlados', path: '/admin-empresa/recetas/medicamentos-controlados' },
+    ],
+  },
+  {
+    label: 'Usuarios / Locales',
+    icon: <UsersIcon />,
+    submenu: [
+      { label: 'Usuarios', path: '/admin-empresa/usuarios-locales/usuarios' },
+      { label: 'Locales / Sucursales', path: '/admin-empresa/usuarios-locales/locales' },
     ],
   },
   {

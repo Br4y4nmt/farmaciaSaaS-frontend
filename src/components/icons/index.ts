@@ -17,3 +17,4 @@ export { default as ExportIcon } from './ExportIcon';
 export { default as ShoppingBagIcon } from './ShoppingBagIcon';
 export { default as ImportIcon } from './ImportIcon';
 export { default as InfoIcon } from './InfoIcon'
+export { default as UsersIcon } from './UsersIcon'

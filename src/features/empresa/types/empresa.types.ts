@@ -116,3 +116,20 @@ export interface Sucursal {
 export interface GetSucursalesResponse {
   sucursales: Sucursal[]
 }
+
+export interface CreateLocalDto {
+  nombre: string
+  direccion_fiscal?: string
+  direccion_comercial?: string
+  departamento?: string
+  provincia?: string
+  distrito?: string
+  telefono?: string
+  correo_contacto?: string
+  responsable?: string
+  estado?: boolean
+}
+
+export interface GetLocalesResponse {
+  sucursales: Sucursal[]
+}
