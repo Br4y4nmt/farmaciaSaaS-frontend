@@ -17,6 +17,8 @@ import { useDeleteSucursal } from '../../features/empresa/hooks/useDeleteSucursa
 import type { Sucursal } from '../../features/empresa/types/empresa.types'
 
 import { InventoryIcon } from '../../components/icons'
+import { showSuccessToast } from '../../components/ui/toast'
+import { showQuestionAlert, showErrorAlert } from '../../components/ui/alerts'
 
 export function LocalesPage() {
   const user = useStoredUser()
@@ -45,17 +47,22 @@ export function LocalesPage() {
   }
 
   async function handleDelete(sucursal: Sucursal) {
-    const confirmDelete = window.confirm(
-      `¿Seguro que deseas eliminar el local/sucursal "${sucursal.nombre}"?`,
-    )
+    const confirmed = await showQuestionAlert({
+      title: 'Eliminar local',
+      text: `¿Seguro que deseas eliminar el local/sucursal "${sucursal.nombre}"?`,
+    })
 
-    if (!confirmDelete) return
+    if (!confirmed) return
 
     const response = await deleteSucursal(sucursal.id)
 
-    if (!response) return
+    if (!response) {
+      await showErrorAlert({ title: 'Error', text: 'No se pudo eliminar el local.' })
+      return
+    }
 
     refetch()
+    showSuccessToast('Local eliminado', '')
   }
 
   const columns: DataTableColumn<Sucursal>[] = [
@@ -105,7 +112,7 @@ export function LocalesPage() {
           <button
             type="button"
             onClick={() => handleEdit(sucursal)}
-            className="rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
+            className="cursor-pointer rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
           >
             Editar
           </button>
@@ -113,7 +120,7 @@ export function LocalesPage() {
           <button
             type="button"
             onClick={() => handleDelete(sucursal)}
-            className="rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700"
+            className="cursor-pointer rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700"
           >
             Eliminar
           </button>

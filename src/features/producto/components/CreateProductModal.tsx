@@ -2,6 +2,9 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { CloseIcon } from '../../../components/icons'
 import { useCategorias } from '../../categoria/hooks/useCategorias'
 import { InfoTooltip } from '../../../components/ui/InfoTooltip'
+import CreateCategoryModal from '../../categoria/components/CreateCategoryModal'
+import CreateLaboratoryModal from '../../laboratorio/components/CreateLaboratoryModal'
+import CreateMarcaModal from '../../marca/components/CreateMarcaModal'
 import { useStoredUser } from '../../auth/hooks/useStoredUser'
 import { useLaboratorios } from '../../laboratorio/hooks/useLaboratorios'
 import { useMarcas } from '../../marca/hooks/useMarcas'
@@ -83,13 +86,16 @@ export default function CreateProductModal({
   const {
     categorias,
     isLoading: isLoadingCategorias,
+    refetch: refetchCategorias,
   } = useCategorias(user?.empresa_id, {
     estado: true,
   })
 
+
   const {
     laboratorios,
     isLoading: isLoadingLaboratorios,
+    refetch: refetchLaboratorios,
   } = useLaboratorios({
     estado: true,
   })
@@ -97,9 +103,14 @@ export default function CreateProductModal({
   const {
     marcas,
     isLoading: isLoadingMarcas,
+    refetch: refetchMarcas,
   } = useMarcas(user?.empresa_id, {
     estado: true,
   })
+
+  const [openCreateCategory, setOpenCreateCategory] = useState(false)
+  const [openCreateLaboratory, setOpenCreateLaboratory] = useState(false)
+  const [openCreateMarca, setOpenCreateMarca] = useState(false)
 
   const {
     crearProducto,
@@ -492,67 +503,101 @@ export default function CreateProductModal({
                 />
               </div>
 
-              <Select
-                label="Categoría"
-                name="categoria_id"
-                value={form.categoria_id}
-                onChange={handleChange}
-                disabled={isLoadingCategorias}
-                options={[
-                  [
-                    '',
-                    isLoadingCategorias
-                      ? 'Cargando categorías...'
-                      : 'Seleccionar categoría',
-                  ],
-                  ...categorias.map((categoria) => [
-                    String(categoria.id),
-                    categoria.categoria_padre
-                      ? `${categoria.categoria_padre.nombre} → ${categoria.nombre}`
-                      : categoria.nombre,
-                  ] as [string, string]),
-                ]}
-              />
+              <div className="col-span-1 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-[13px] font-medium text-[#606266]">Categoría</label>
 
-              <Select
-                label="Laboratorio"
-                name="laboratorio_id"
-                value={form.laboratorio_id}
-                onChange={handleChange}
-                disabled={isLoadingLaboratorios}
-                options={[
-                  [
-                    '',
-                    isLoadingLaboratorios
-                      ? 'Cargando laboratorios...'
-                      : 'Seleccionar laboratorio',
-                  ],
-                  ...laboratorios.map((laboratorio) => [
-                    String(laboratorio.id),
-                    laboratorio.nombre,
-                  ] as [string, string]),
-                ]}
-              />
+                  <button
+                    type="button"
+                    onClick={() => setOpenCreateCategory(true)}
+                    className="cursor-pointer text-[13px] font-semibold text-sky-600 transition hover:text-sky-700"
+                  >
+                    [+ Nuevo]
+                  </button>
+                </div>
 
-              <Select
-                label="Marca"
-                name="marca_id"
-                value={form.marca_id}
-                onChange={handleChange}
-                disabled={isLoadingMarcas}
-                options={[
-                  [
-                    '',
-                    isLoadingMarcas
-                      ? 'Cargando marcas...'
-                      : 'Seleccionar marca',
-                  ],
-                  ...marcas.map((marca) => [
-                    String(marca.id),
-                    marca.nombre,
-                  ] as [string, string]),
-                ]}
-              />
+                <select
+                  name="categoria_id"
+                  value={form.categoria_id}
+                  onChange={handleChange}
+                  disabled={isLoadingCategorias}
+                  className="w-full cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                >
+                  <option value="" disabled>
+                    {isLoadingCategorias ? 'Cargando categorías...' : 'Seleccionar categoría'}
+                  </option>
+
+                  {categorias.map((categoria) => (
+                    <option key={categoria.id} value={String(categoria.id)}>
+                      {categoria.categoria_padre ? `${categoria.categoria_padre.nombre} → ${categoria.nombre}` : categoria.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-span-1 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-[13px] font-medium text-[#606266]">Laboratorio</label>
+
+                  <button
+                    type="button"
+                    onClick={() => setOpenCreateLaboratory(true)}
+                    className="cursor-pointer text-[13px] font-semibold text-sky-600 transition hover:text-sky-700"
+                  >
+                    [+ Nuevo]
+                  </button>
+                </div>
+
+                <select
+                  name="laboratorio_id"
+                  value={form.laboratorio_id}
+                  onChange={handleChange}
+                  disabled={isLoadingLaboratorios}
+                  className="w-full cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                >
+                  <option value="" disabled>
+                    {isLoadingLaboratorios ? 'Cargando laboratorios...' : 'Seleccionar laboratorio'}
+                  </option>
+
+                  {laboratorios.map((laboratorio) => (
+                    <option key={laboratorio.id} value={String(laboratorio.id)}>
+                      {laboratorio.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-span-1 flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <label className="text-[13px] font-medium text-[#606266]">Marca</label>
+
+                  <button
+                    type="button"
+                    onClick={() => setOpenCreateMarca(true)}
+                    className="cursor-pointer text-[13px] font-semibold text-sky-600 transition hover:text-sky-700"
+                  >
+                    [+ Nuevo]
+                  </button>
+                </div>
+
+                <select
+                  name="marca_id"
+                  value={form.marca_id}
+                  onChange={handleChange}
+                  disabled={isLoadingMarcas}
+                  className="w-full cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+                >
+                  <option value="" disabled>
+                    {isLoadingMarcas ? 'Cargando marcas...' : 'Seleccionar marca'}
+                  </option>
+
+                  {marcas.map((marca) => (
+                    <option key={marca.id} value={String(marca.id)}>
+                      {marca.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="col-span-2 flex flex-col gap-2">
                 <label className="text-[13px] font-medium text-[#606266]">
@@ -782,6 +827,34 @@ export default function CreateProductModal({
             </button>
           </div>
         </form>
+
+        <CreateCategoryModal
+          isOpen={openCreateCategory}
+          onClose={() => setOpenCreateCategory(false)}
+          onSuccess={async () => {
+            setOpenCreateCategory(false)
+            await refetchCategorias()
+          }}
+        />
+
+        <CreateLaboratoryModal
+          isOpen={openCreateLaboratory}
+          onClose={() => setOpenCreateLaboratory(false)}
+          onSuccess={async () => {
+            setOpenCreateLaboratory(false)
+            await refetchLaboratorios()
+          }}
+        />
+
+        <CreateMarcaModal
+          isOpen={openCreateMarca}
+          onClose={() => setOpenCreateMarca(false)}
+          onSuccess={async () => {
+            setOpenCreateMarca(false)
+            await refetchMarcas()
+          }}
+        />
+
       </div>
     </div>
   )

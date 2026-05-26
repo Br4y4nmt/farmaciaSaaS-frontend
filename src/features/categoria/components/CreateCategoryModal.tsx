@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { CloseIcon } from '../../../components/icons'
+import { InfoTooltip } from '../../../components/ui/InfoTooltip'
 import { useStoredUser } from '../../auth/hooks/useStoredUser'
 import { showErrorToast, showSuccessToast } from '../../../components/ui/toast'
 import { useCreateCategoria } from '../hooks/useCreateCategoria'
@@ -131,8 +132,11 @@ export default function CreateCategoryModal({
         <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 flex flex-col gap-1">
-              <label className="text-[13px] font-medium text-[#606266]">
-                Nombre *
+              <label className="flex items-center gap-1.5 text-[13px] font-medium text-[#606266]">
+                <span>
+                  Nombre <span className="text-red-500">*</span>
+                </span>
+                <InfoTooltip text="Nombre visible de la categoría. Ej: Analgésicos, Jarabes, Antiinflamatorios." />
               </label>
 
               <input
@@ -146,8 +150,9 @@ export default function CreateCategoryModal({
 
             <div className="col-span-2 flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <label className="text-[13px] font-medium text-[#606266]">
-                  Categoría padre *
+                <label className="flex items-center gap-1.5 text-[13px] font-medium text-[#606266]">
+                  <span>Categoría padre</span>
+                  <InfoTooltip text="Categoría raíz — p. ej. Medicamentos, Higiene, Belleza. Usa [+ Nuevo] para crear una nueva." />
                 </label>
 
               <button

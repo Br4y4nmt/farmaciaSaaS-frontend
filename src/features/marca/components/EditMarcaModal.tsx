@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { CloseIcon } from '../../../components/icons'
 import { showErrorToast, showSuccessToast } from '../../../components/ui/toast'
 import { useUpdateMarca } from '../hooks/useUpdateMarca'
@@ -23,6 +23,29 @@ const initialForm: FormData = {
   estado: true,
 }
 
+function buildFormFromMarca(marca: Marca): FormData {
+  return {
+    nombre: marca.nombre ?? '',
+    descripcion: marca.descripcion ?? '',
+    estado: marca.estado ?? true,
+  }
+}
+
+function normalizeForm(form: FormData): FormData {
+  return {
+    nombre: form.nombre.trim(),
+    descripcion: form.descripcion.trim(),
+    estado: form.estado,
+  }
+}
+
+function areFormsEqual(formA: FormData, formB: FormData) {
+  const normalizedA = normalizeForm(formA)
+  const normalizedB = normalizeForm(formB)
+
+  return JSON.stringify(normalizedA) === JSON.stringify(normalizedB)
+}
+
 export default function EditMarcaModal({
   isOpen,
   marca,
@@ -33,19 +56,23 @@ export default function EditMarcaModal({
   const [form, setForm] = useState<FormData>(initialForm)
 
   useEffect(() => {
-    if (marca) {
-      setForm({
-        nombre: marca.nombre || '',
-        descripcion: marca.descripcion || '',
-        estado: marca.estado ?? true,
-      })
+    if (isOpen && marca) {
+      setForm(buildFormFromMarca(marca))
     }
-  }, [marca])
+  }, [isOpen, marca])
+
+  const hasChanges = useMemo(() => {
+    if (!marca) return false
+
+    const originalForm = buildFormFromMarca(marca)
+
+    return !areFormsEqual(form, originalForm)
+  }, [form, marca])
 
   if (!isOpen || !marca) return null
 
   function handleChange(
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) {
     const { name, value } = event.target
 
@@ -55,37 +82,48 @@ export default function EditMarcaModal({
     }))
   }
 
-async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault()
-
-  if (!marca) return
-
-  const response = await updateMarca(marca.id, {
-    nombre: form.nombre.trim(),
-    descripcion: form.descripcion.trim() || null,
-    estado: form.estado,
-  })
-
-  if (!response) {
-    showErrorToast(
-      'No se pudo actualizar la marca',
-      error || 'Verifica los datos e intenta nuevamente'
-    )
-    return
+  function handleClose() {
+    setForm(initialForm)
+    onClose()
   }
 
-  showSuccessToast(
-    'Marca actualizada correctamente',
-    'Los datos de la marca fueron actualizados'
-  )
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
 
-  onClose()
-  onSuccess?.()
-}
+    if (!marca) return
+    if (!hasChanges) return
+
+    const normalizedForm = normalizeForm(form)
+
+    const response = await updateMarca(marca.id, {
+      nombre: normalizedForm.nombre,
+      descripcion: normalizedForm.descripcion || null,
+      estado: normalizedForm.estado,
+    })
+
+    if (!response) {
+      showErrorToast(
+        'No se pudo actualizar la marca',
+        error || 'Verifica los datos e intenta nuevamente',
+      )
+
+      return
+    }
+
+    handleClose()
+    onSuccess?.()
+
+    setTimeout(() => {
+      showSuccessToast(
+        'Marca actualizada correctamente',
+        'Los datos de la marca fueron actualizados',
+      )
+    }, 100)
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
 
       <div className="relative w-full max-w-2xl rounded-sm border border-slate-200 bg-white shadow-xl">
         <div className="flex items-center justify-between px-6 py-4">
@@ -95,19 +133,21 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 
           <button
             type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
+            onClick={handleClose}
+            disabled={isLoading}
+            className="cursor-pointer text-slate-400 transition-colors hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <CloseIcon />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-1 flex flex-col gap-1">
               <label className="text-[13px] font-medium text-[#606266]">
                 Código
               </label>
+
               <input
                 value={marca.codigo || ''}
                 disabled
@@ -119,11 +159,13 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
               <label className="text-[13px] font-medium text-[#606266]">
                 Estado
               </label>
+
               <select
                 name="estado"
                 value={String(form.estado)}
                 onChange={handleChange}
-                className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                disabled={isLoading}
+                className="cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="true">Activo</option>
                 <option value="false">Inactivo</option>
@@ -132,14 +174,16 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
 
             <div className="col-span-2 flex flex-col gap-1">
               <label className="text-[13px] font-medium text-[#606266]">
-                Nombre *
+                Nombre <span className="text-red-500">*</span>
               </label>
+
               <input
                 name="nombre"
                 value={form.nombre}
                 onChange={handleChange}
                 required
-                className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                disabled={isLoading}
+                className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
             </div>
 
@@ -147,12 +191,14 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
               <label className="text-[13px] font-medium text-[#606266]">
                 Descripción
               </label>
+
               <textarea
                 name="descripcion"
                 value={form.descripcion}
                 onChange={handleChange}
                 rows={2}
-                className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                disabled={isLoading}
+                className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               />
             </div>
           </div>
@@ -160,16 +206,17 @@ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
-              className="rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+              onClick={handleClose}
+              disabled={isLoading}
+              className="cursor-pointer rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancelar
             </button>
 
             <button
               type="submit"
-              disabled={isLoading}
-              className="rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isLoading || !hasChanges}
+              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? 'Guardando...' : 'Guardar'}
             </button>

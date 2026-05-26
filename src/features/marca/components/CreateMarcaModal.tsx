@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { CloseIcon } from '../../../components/icons'
+import { InfoTooltip } from '../../../components/ui/InfoTooltip'
 import { useStoredUser } from '../../auth/hooks/useStoredUser'
 import { showErrorToast, showSuccessToast } from '../../../components/ui/toast'
 import { useCreateMarca } from '../hooks/useCreateMarca'
@@ -99,8 +100,11 @@ export default function CreateMarcaModal({
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 flex flex-col gap-1">
-              <label className="text-[13px] font-medium text-[#606266]">
-                Nombre *
+              <label className="flex items-center gap-1.5 text-[13px] font-medium text-[#606266]">
+                <span>
+                  Nombre <span className="text-red-500">*</span>
+                </span>
+                <InfoTooltip text="Nombre de la marca. Ej: Nestlé, Johnson & Johnson, Acme." />
               </label>
               <input
                 name="nombre"

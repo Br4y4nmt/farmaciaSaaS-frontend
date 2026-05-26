@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { CloseIcon } from '../../../components/icons'
+import { InfoTooltip } from '../../../components/ui/InfoTooltip'
 import { useCreateLocal } from '../hooks/useCreateLocal'
+import {
+  showSuccessToast,
+  showErrorToast,
+} from '../../../components/ui/toast'
 
 type CreateLocalModalProps = {
   isOpen: boolean
@@ -26,7 +31,7 @@ export function CreateLocalModal({
   onClose,
   onCreated,
 }: CreateLocalModalProps) {
-  const { createLocal, isLoading, error } = useCreateLocal()
+  const { createLocal, isLoading } = useCreateLocal()
   const [form, setForm] = useState(initialForm)
 
   if (!isOpen) return null
@@ -52,6 +57,16 @@ export function CreateLocalModal({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    // Validar que el teléfono tenga exactamente 9 dígitos numéricos
+    const telefonoDigits = form.telefono.replace(/\D/g, '')
+    if (telefonoDigits.length !== 9) {
+      showErrorToast(
+        'Teléfono inválido',
+        'El teléfono debe contener exactamente 9 dígitos numéricos.',
+      )
+
+      return
+    }
 
     const response = await createLocal({
       nombre: form.nombre.trim(),
@@ -60,17 +75,31 @@ export function CreateLocalModal({
       departamento: form.departamento.trim(),
       provincia: form.provincia.trim(),
       distrito: form.distrito.trim(),
-      telefono: form.telefono.trim(),
+      telefono: telefonoDigits,
       correo_contacto: form.correo_contacto.trim(),
       responsable: form.responsable.trim(),
       estado: form.estado,
     })
 
-    if (!response) return
+    if (!response) {
+      showErrorToast(
+        'No se pudo crear la sucursal',
+        'Verifica los datos e inténtalo nuevamente',
+      )
+
+      return
+    }
 
     setForm(initialForm)
     onCreated?.()
     onClose()
+
+    setTimeout(() => {
+      showSuccessToast(
+        'Sucursal creada correctamente',
+        'La sucursal fue registrada con éxito',
+      )
+    }, 100)
   }
 
   return (
@@ -81,9 +110,8 @@ export function CreateLocalModal({
         <div className="flex items-center justify-between px-6 py-4">
           <div>
             <h2 className="text-xl font-medium text-slate-800">
-              Nuevo sucursal
+              Nueva sucursal
             </h2>
-
           </div>
 
           <button
@@ -101,13 +129,13 @@ export function CreateLocalModal({
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                 Nombre del local / sucursal
               </label>
+
               <input
                 name="nombre"
                 value={form.nombre}
                 onChange={handleChange}
                 type="text"
                 required
-                placeholder="Ej: Botica Central"
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
@@ -116,12 +144,13 @@ export function CreateLocalModal({
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                 Departamento
               </label>
+
               <input
                 name="departamento"
                 value={form.departamento}
                 onChange={handleChange}
                 type="text"
-                placeholder="Ej: Huánuco"
+                required
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
@@ -130,12 +159,13 @@ export function CreateLocalModal({
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                 Provincia
               </label>
+
               <input
                 name="provincia"
                 value={form.provincia}
                 onChange={handleChange}
                 type="text"
-                placeholder="Ej: Huánuco"
+                required
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
@@ -144,12 +174,13 @@ export function CreateLocalModal({
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                 Distrito
               </label>
+
               <input
                 name="distrito"
                 value={form.distrito}
                 onChange={handleChange}
                 type="text"
-                placeholder="Ej: Amarilis"
+                required
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
@@ -158,40 +189,49 @@ export function CreateLocalModal({
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                 Teléfono
               </label>
+
               <input
                 name="telefono"
                 value={form.telefono}
                 onChange={handleChange}
-                type="text"
-                placeholder="Ej: 987654321"
+                type="tel"
+                required
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
 
             <div className="md:col-span-3">
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                Dirección fiscal
+                <div className="flex items-center gap-1.5">
+                  <span>Dirección fiscal</span>
+                  <InfoTooltip text="Dirección utilizada en documentos fiscales (facturación). Ejemplo: Av. Principal 123, Oficina 4(puede ser su domicilio)." />
+                </div>
               </label>
+
               <input
                 name="direccion_fiscal"
                 value={form.direccion_fiscal}
                 onChange={handleChange}
                 type="text"
-                placeholder="Dirección fiscal del local"
+                required
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
 
             <div className="md:col-span-3">
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                Dirección comercial
+                <div className="flex items-center gap-1.5">
+                  <span>Dirección comercial</span>
+                  <InfoTooltip text="Dirección donde opera la sucursal (tienda fisica). Ejemplo: Calle Secundaria 45, Local 2." />
+                </div>
               </label>
+
               <input
                 name="direccion_comercial"
                 value={form.direccion_comercial}
                 onChange={handleChange}
                 type="text"
-                placeholder="Dirección donde atiende el local"
+                required
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
@@ -200,12 +240,13 @@ export function CreateLocalModal({
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                 Correo de contacto
               </label>
+
               <input
                 name="correo_contacto"
                 value={form.correo_contacto}
                 onChange={handleChange}
                 type="email"
-                placeholder="local@empresa.com"
+                required
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
@@ -214,12 +255,13 @@ export function CreateLocalModal({
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                 Responsable
               </label>
+
               <input
                 name="responsable"
                 value={form.responsable}
                 onChange={handleChange}
                 type="text"
-                placeholder="Nombre del encargado"
+                required
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
             </div>
@@ -238,18 +280,12 @@ export function CreateLocalModal({
             </div>
           </div>
 
-          {error && (
-            <p className="mt-4 rounded bg-red-50 px-4 py-2 text-sm text-red-600">
-              {error}
-            </p>
-          )}
-
           <div className="mt-8 flex justify-end gap-3">
             <button
               type="button"
               onClick={handleClose}
               disabled={isLoading}
-              className="rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancelar
             </button>
@@ -257,7 +293,7 @@ export function CreateLocalModal({
             <button
               type="submit"
               disabled={isLoading}
-              className="rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? 'Guardando...' : 'Guardar'}
             </button>

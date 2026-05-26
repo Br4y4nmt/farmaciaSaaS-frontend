@@ -6,18 +6,19 @@ import { DataTable } from '../../components/ui/DataTable'
 import type { DataTableColumn } from '../../components/ui/DataTable'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { TableFilterBar } from '../../components/ui/TableFilterBar'
-import { ProductsIcon, ExportIcon  } from '../../components/icons'
+import { ProductsIcon, ExportIcon } from '../../components/icons'
 import { CreateCategoryModal, EditCategoryModal } from '../../features/categoria'
 import type { Categoria as CategoriaApi } from '../../features/categoria'
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
 import { useCategorias, useDeleteCategoria } from '../../features/categoria'
+import { showQuestionAlert, showErrorAlert } from '../../components/ui/alerts'
+import { showSuccessToast } from '../../components/ui/toast'
 
 type Category = {
   id: number
   nombre: string
   categoriaPadre?: string | null
-  descripcion?: string | null
   productos?: number | null
   estado?: boolean | null
   categoria: CategoriaApi
@@ -31,7 +32,9 @@ function CategoriesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<CategoriaApi | null>(null)
+
   const { deleteCategoria } = useDeleteCategoria()
+
   const {
     categorias,
     isLoading,
@@ -51,8 +54,7 @@ function CategoriesPage() {
     setIsCreateModalOpen(true)
   }
 
-  function handleExport() {
-  }
+  function handleExport() {}
 
   function handleEdit(category: CategoriaApi) {
     setEditingCategory(category)
@@ -60,17 +62,25 @@ function CategoriesPage() {
   }
 
   async function handleDelete(category: Category) {
-    const confirmDelete = window.confirm(
-      `¿Seguro que deseas eliminar la categoria "${category.nombre}"?`
-    )
+    const confirmed = await showQuestionAlert({
+      title: 'Eliminar categoría',
+      text: `¿Seguro que deseas eliminar la categoria "${category.nombre}"?`,
+    })
 
-    if (!confirmDelete) return
+    if (!confirmed) return
 
     const response = await deleteCategoria(category.id)
 
-    if (!response) return
+    if (!response) {
+      await showErrorAlert({
+        title: 'Error',
+        text: 'No se pudo eliminar la categoría.',
+      })
+      return
+    }
 
     refetch()
+    showSuccessToast('Categoría eliminada', '')
   }
 
   const columns: DataTableColumn<Category>[] = [
@@ -87,11 +97,6 @@ function CategoriesPage() {
       key: 'categoriaPadre',
       header: 'Categoria padre',
       render: (category) => category.categoriaPadre || '-',
-    },
-    {
-      key: 'descripcion',
-      header: 'Descripcion',
-      render: (category) => category.descripcion || '-',
     },
     {
       key: 'productos',
@@ -125,6 +130,7 @@ function CategoriesPage() {
           >
             Editar
           </button>
+
           <button
             className="cursor-pointer rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700"
             type="button"
@@ -141,7 +147,6 @@ function CategoriesPage() {
     id: categoria.id,
     nombre: categoria.nombre,
     categoriaPadre: categoria.categoria_padre?.nombre || null,
-    descripcion: categoria.descripcion ?? null,
     productos: 0,
     estado: categoria.estado ?? true,
     categoria,
@@ -151,7 +156,7 @@ function CategoriesPage() {
     <div className="flex min-h-screen bg-slate-100">
       <AdminEmpresaSidebar collapsed={collapsed} />
 
-      <div className="flex flex-1 flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col">
         <AdminEmpresaHeader
           user={user}
           onLogout={handleLogout}
@@ -165,14 +170,13 @@ function CategoriesPage() {
           onButtonClick={handleNew}
           icon={<ProductsIcon />}
           actions={
-          <button
-            onClick={handleExport}
-            className="cursor-pointer flex items-center gap-2 rounded-sm border border-slate-700 bg-slate-900 px-2 py-1.5 text-[12px] font-normal text-white transition hover:bg-slate-800"
-          >
-            <ExportIcon />
-
-            Exportar
-          </button>
+            <button
+              onClick={handleExport}
+              className="flex cursor-pointer items-center gap-2 rounded-sm border border-slate-700 bg-slate-900 px-2 py-1.5 text-[12px] font-normal text-white transition hover:bg-slate-800"
+            >
+              <ExportIcon />
+              Exportar
+            </button>
           }
         />
 

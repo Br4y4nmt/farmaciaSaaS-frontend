@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { CloseIcon } from '../../../components/icons'
 import { showErrorToast, showSuccessToast } from '../../../components/ui/toast'
 import { useUpdateCategoria } from '../hooks/useUpdateCategoria'
@@ -26,6 +26,31 @@ const initialForm: FormData = {
   estado: true,
 }
 
+function buildFormFromCategory(category: Categoria): FormData {
+  return {
+    nombre: category.nombre ?? '',
+    categoriaPadre: category.parent_id ? String(category.parent_id) : '',
+    descripcion: category.descripcion ?? '',
+    estado: category.estado ?? true,
+  }
+}
+
+function normalizeForm(form: FormData): FormData {
+  return {
+    nombre: form.nombre.trim(),
+    categoriaPadre: form.categoriaPadre,
+    descripcion: form.descripcion.trim(),
+    estado: form.estado,
+  }
+}
+
+function areFormsEqual(formA: FormData, formB: FormData) {
+  const normalizedA = normalizeForm(formA)
+  const normalizedB = normalizeForm(formB)
+
+  return JSON.stringify(normalizedA) === JSON.stringify(normalizedB)
+}
+
 export default function EditCategoryModal({
   isOpen,
   category,
@@ -35,28 +60,31 @@ export default function EditCategoryModal({
   const { updateCategoria, isLoading, error } = useUpdateCategoria()
 
   const { categorias, isLoading: isLoadingCategorias } = useCategoriasRaiz(
-    category?.empresa_id
+    category?.empresa_id,
   )
 
   const [form, setForm] = useState<FormData>(initialForm)
 
   useEffect(() => {
-    if (!category) return
+    if (isOpen && category) {
+      setForm(buildFormFromCategory(category))
+    }
+  }, [isOpen, category])
 
-    setForm({
-      nombre: category.nombre ?? '',
-      categoriaPadre: category.parent_id ? String(category.parent_id) : '',
-      descripcion: category.descripcion ?? '',
-      estado: category.estado ?? true,
-    })
-  }, [category])
+  const hasChanges = useMemo(() => {
+    if (!category) return false
+
+    const originalForm = buildFormFromCategory(category)
+
+    return !areFormsEqual(form, originalForm)
+  }, [form, category])
 
   if (!isOpen || !category) return null
 
   const categoryId = category.id
 
   function handleChange(
-    event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) {
     const { name, value } = event.target
 
@@ -80,33 +108,37 @@ export default function EditCategoryModal({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!form.nombre.trim()) {
-      showErrorToast('Campo requerido', 'El nombre es obligatorio')
-      return
-    }
+    if (!hasChanges) return
+
+    const normalizedForm = normalizeForm(form)
 
     const response = await updateCategoria(categoryId, {
-      parent_id: form.categoriaPadre ? Number(form.categoriaPadre) : null,
-      nombre: form.nombre.trim(),
-      descripcion: form.descripcion.trim() || null,
-      estado: form.estado,
+      parent_id: normalizedForm.categoriaPadre
+        ? Number(normalizedForm.categoriaPadre)
+        : null,
+      nombre: normalizedForm.nombre,
+      descripcion: normalizedForm.descripcion || null,
+      estado: normalizedForm.estado,
     })
 
     if (!response) {
       showErrorToast(
         'No se pudo actualizar la categoría',
-        error || 'Verifica los datos e inténtalo nuevamente'
+        error || 'Verifica los datos e inténtalo nuevamente',
       )
+
       return
     }
 
-    showSuccessToast(
-      'Categoría actualizada correctamente',
-      'La categoría fue actualizada con éxito'
-    )
-
     handleClose()
     onUpdated?.()
+
+    setTimeout(() => {
+      showSuccessToast(
+        'Categoría actualizada correctamente',
+        'La categoría fue actualizada con éxito',
+      )
+    }, 100)
   }
 
   return (
@@ -132,7 +164,7 @@ export default function EditCategoryModal({
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 flex flex-col gap-1">
               <label className="text-[13px] font-medium text-[#606266]">
-                Nombre *
+                Nombre <span className="text-red-500">*</span>
               </label>
 
               <input
@@ -147,20 +179,21 @@ export default function EditCategoryModal({
 
             <div className="col-span-2 flex flex-col gap-1">
               <label className="text-[13px] font-medium text-[#606266]">
-                Categoría padre
+                Categoría padre <span className="text-red-500">*</span>
               </label>
 
               <select
                 name="categoriaPadre"
                 value={form.categoriaPadre}
                 onChange={handleChange}
+                required
                 disabled={isLoadingCategorias || isLoading}
                 className="cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
               >
                 <option value="">
                   {isLoadingCategorias
                     ? 'Cargando categorías...'
-                    : 'Sin categoría'}
+                    : 'Seleccionar categoría padre'}
                 </option>
 
                 {categorias
@@ -225,7 +258,7 @@ export default function EditCategoryModal({
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !hasChanges}
               className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? 'Guardando...' : 'Guardar'}

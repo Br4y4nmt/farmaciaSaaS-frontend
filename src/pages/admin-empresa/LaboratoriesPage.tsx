@@ -8,6 +8,8 @@ import { PageHeader } from '../../components/ui/PageHeader'
 import { TableFilterBar } from '../../components/ui/TableFilterBar'
 import { ProductsIcon, ExportIcon } from '../../components/icons'
 import { showErrorToast } from '../../components/ui/toast'
+import { showQuestionAlert, showErrorAlert } from '../../components/ui/alerts'
+import { showSuccessToast } from '../../components/ui/toast'
 import CreateLaboratoryModal from '../../features/laboratorio/components/CreateLaboratoryModal'
 import EditLaboratoryModal from '../../features/laboratorio/components/EditLaboratoryModal'
 import type { Laboratorio } from '../../features/laboratorio/types/laboratorio.types'
@@ -46,84 +48,78 @@ function LaboratoriesPage() {
   }
 
   async function handleDelete(laboratory: Laboratorio) {
-    const confirmDelete = window.confirm(
-      `¿Seguro que deseas eliminar el laboratorio "${laboratory.nombre}"?`
-    )
+    const confirmed = await showQuestionAlert({
+      title: 'Eliminar laboratorio',
+      text: `¿Seguro que deseas eliminar el laboratorio "${laboratory.nombre}"?`,
+    })
 
-    if (!confirmDelete) return
+    if (!confirmed) return
 
     const response = await deleteLaboratorio(laboratory.id)
 
     if (!response) {
-      showErrorToast(
-        'No se pudo eliminar el laboratorio',
-        deleteError || 'Verifica los datos e intenta nuevamente'
-      )
+      await showErrorAlert({ title: 'Error', text: deleteError || 'No se pudo eliminar el laboratorio.' })
       return
     }
 
     refetch()
+    showSuccessToast('Laboratorio eliminado', '')
   }
 
-  const columns: DataTableColumn<Laboratorio>[] = [
-    {
-      key: 'codigo',
-      header: 'Código',
-      render: (lab) => lab.codigo || '-',
-    },
-    {
-      key: 'nombre',
-      header: 'Laboratorio',
-    },
-    {
-      key: 'descripcion',
-      header: 'Descripción',
-      render: (lab) => lab.descripcion || '-',
-    },
-    {
-      key: 'total_productos',
-      header: 'Productos',
-      render: (lab) => lab.total_productos ?? 0,
-    },
-    {
-      key: 'estado',
-      header: 'Estado',
-      render: (lab) => (
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${
-            lab.estado
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
-          }`}
+const columns: DataTableColumn<Laboratorio>[] = [
+  {
+    key: 'codigo',
+    header: 'Código',
+    render: (lab) => lab.codigo || '-',
+  },
+  {
+    key: 'nombre',
+    header: 'Laboratorio',
+  },
+  {
+    key: 'total_productos',
+    header: 'Productos',
+    render: (lab) => lab.total_productos ?? 0,
+  },
+  {
+    key: 'estado',
+    header: 'Estado',
+    render: (lab) => (
+      <span
+        className={`rounded-full px-3 py-1 text-xs font-medium ${
+          lab.estado
+            ? 'bg-green-100 text-green-700'
+            : 'bg-red-100 text-red-700'
+        }`}
+      >
+        {lab.estado ? 'Activo' : 'Inactivo'}
+      </span>
+    ),
+  },
+  {
+    key: 'acciones',
+    header: 'Acciones',
+    render: (lab) => (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => handleEdit(lab)}
+          className="cursor-pointer rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
         >
-          {lab.estado ? 'Activo' : 'Inactivo'}
-        </span>
-      ),
-    },
-    {
-      key: 'acciones',
-      header: 'Acciones',
-      render: (lab) => (
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleEdit(lab)}
-            className="cursor-pointer rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
-          >
-            Editar
-          </button>
+          Editar
+        </button>
 
-          <button
-            type="button"
-            onClick={() => handleDelete(lab)}
-            className="cursor-pointer rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700"
-          >
-            Eliminar
-          </button>
-        </div>
-      ),
-    },
-  ]
+        <button
+          type="button"
+          onClick={() => handleDelete(lab)}
+          className="cursor-pointer rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700"
+        >
+          Eliminar
+        </button>
+      </div>
+    ),
+  },
+]
 
   return (
     <div className="flex min-h-screen bg-slate-100">

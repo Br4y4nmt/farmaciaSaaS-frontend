@@ -13,6 +13,7 @@ import EditMarcaModal from '../../features/marca/components/EditMarcaModal'
 import type { Marca } from '../../features/marca/types/marca.types'
 import { useDeleteMarca } from '../../features/marca/hooks/useDeleteMarca'
 import { showErrorToast, showSuccessToast } from '../../components/ui/toast'
+import { showQuestionAlert, showErrorAlert } from '../../components/ui/alerts'
 import CreateMarcaModal from '../../features/marca/components/CreateMarcaModal'
 
 function BrandsPage() {
@@ -67,26 +68,21 @@ function handleEditSuccess() {
 }
 
 async function handleDelete(marca: Marca) {
-  const confirmDelete = window.confirm(
-    `¿Seguro que deseas eliminar la marca "${marca.nombre}"?`
-  )
+  const confirmed = await showQuestionAlert({
+    title: 'Eliminar marca',
+    text: `¿Seguro que deseas eliminar la marca "${marca.nombre}"?`,
+  })
 
-  if (!confirmDelete) return
+  if (!confirmed) return
 
   const success = await deleteMarca(marca.id)
 
   if (!success) {
-    showErrorToast(
-      'No se pudo eliminar la marca',
-      deleteError || 'Verifica si la marca tiene productos asociados'
-    )
+    await showErrorAlert({ title: 'Error', text: deleteError || 'Verifica si la marca tiene productos asociados' })
     return
   }
 
-  showSuccessToast(
-    'Marca eliminada correctamente',
-    'La lista de marcas fue actualizada'
-  )
+  showSuccessToast('Marca eliminada correctamente', 'La lista de marcas fue actualizada')
 
   refetch()
 }
@@ -100,11 +96,6 @@ async function handleDelete(marca: Marca) {
     {
       key: 'nombre',
       header: 'Marca',
-    },
-    {
-      key: 'descripcion',
-      header: 'Descripción',
-      render: (marca: Marca) => marca.descripcion || '-',
     },
     {
       key: 'total_productos',
@@ -132,7 +123,7 @@ async function handleDelete(marca: Marca) {
       render: (marca: Marca) => (
         <div className="flex items-center gap-2">
         <button
-          className="rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
+          className="cursor-pointer rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
           type="button"
           onClick={() => handleEdit(marca)}
         >
@@ -140,7 +131,7 @@ async function handleDelete(marca: Marca) {
         </button>
 
         <button
-          className="rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="cursor-pointer rounded bg-red-600 px-3 py-1 text-xs text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           type="button"
           disabled={isDeleting}
           onClick={() => handleDelete(marca)}
