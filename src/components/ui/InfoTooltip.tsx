@@ -5,9 +5,10 @@ import { InfoIcon } from '../icons'
 type InfoTooltipProps = {
   text: string
   size?: number
+  children?: React.ReactNode
 }
 
-export function InfoTooltip({ text, size = 16 }: InfoTooltipProps) {
+export function InfoTooltip({ text, size = 16, children }: InfoTooltipProps) {
   const anchorRef = useRef<HTMLSpanElement | null>(null)
   const [visible, setVisible] = useState(false)
   const [coords, setCoords] = useState({ left: 0, top: 0 })
@@ -60,7 +61,9 @@ export function InfoTooltip({ text, size = 16 }: InfoTooltipProps) {
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
     >
-      <InfoIcon size={size} className="cursor-help text-slate-500 transition-colors hover:text-slate-700" />
+      {children ?? (
+        <InfoIcon size={size} className="cursor-help text-slate-500 transition-colors hover:text-slate-700" />
+      )}
 
       {visible && typeof document !== 'undefined' ? createPortal(tooltip, document.body) : null}
     </span>

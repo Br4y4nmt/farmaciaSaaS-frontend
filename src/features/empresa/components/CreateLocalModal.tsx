@@ -117,7 +117,7 @@ export function CreateLocalModal({
           <button
             type="button"
             onClick={handleClose}
-            className="text-slate-400 transition-colors hover:text-slate-600"
+            className="cursor-pointer text-slate-400 transition-colors hover:text-slate-600"
           >
             <CloseIcon />
           </button>

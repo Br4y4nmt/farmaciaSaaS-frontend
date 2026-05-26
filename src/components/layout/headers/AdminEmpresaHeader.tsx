@@ -17,8 +17,7 @@ type AdminEmpresaHeaderProps = {
 const quickActions: QuickAction[] = [
   { symbol: '+', label: 'POS' },
   { symbol: '+', label: 'Venta' },
-  { symbol: '+', label: 'Producto' },
-  { symbol: '...', label: '...', isEdit: true },
+  { symbol: '+', label: 'Prod' },
 ]
 
 export function AdminEmpresaHeader({ user, onLogout, collapsed, setCollapsed }: AdminEmpresaHeaderProps) {

@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 
 import { CloseIcon } from '../../../components/icons'
 import { InfoTooltip } from '../../../components/ui/InfoTooltip'
 
 import { useStoredUser } from '../../auth/hooks/useStoredUser'
 import { useProveedores } from '../../proveedor/hooks/useProveedores'
+import CreateProveedorModal from '../../proveedor/components/CreateProveedorModal'
 import { useProductos } from '../../producto/hooks/useProductos'
 import { useLocales } from '../../empresa/hooks/useLocales'
 import { useCreateCompra } from '../hooks/useCreateCompra'
@@ -78,7 +79,8 @@ export default function CreateCompraModal({
 
   const [activeSection, setActiveSection] = useState<ActiveSection>('datos')
 
-  const { proveedores, isLoading: isLoadingProveedores } = useProveedores()
+  const { proveedores, isLoading: isLoadingProveedores, refetch: refetchProveedores } = useProveedores()
+  const [openCreateProveedor, setOpenCreateProveedor] = useState(false)
   const { productos, isLoading: isLoadingProductos } = useProductos()
   const { locales, isLoading: isLoadingLocales } = useLocales()
 
@@ -309,6 +311,15 @@ export default function CreateCompraModal({
                 disabled={isLoadingProveedores}
                 required
                 info="Selecciona la empresa o droguería a la que le estás comprando la mercadería."
+                labelAction={
+                  <button
+                    type="button"
+                    onClick={() => setOpenCreateProveedor(true)}
+                    className="cursor-pointer text-[13px] font-semibold text-sky-600 transition hover:text-sky-700"
+                  >
+                    [+ Nuevo]
+                  </button>
+                }
                 options={[
                   [
                     '',
@@ -631,6 +642,14 @@ export default function CreateCompraModal({
             </button>
           </div>
         </form>
+        <CreateProveedorModal
+          isOpen={openCreateProveedor}
+          onClose={() => setOpenCreateProveedor(false)}
+          onSuccess={async () => {
+            setOpenCreateProveedor(false)
+            if (refetchProveedores) await refetchProveedores()
+          }}
+        />
       </div>
     </div>
   )
@@ -705,6 +724,7 @@ function Select({
   disabled = false,
   info,
   required = false,
+  labelAction,
 }: {
   label: string
   name: string
@@ -714,12 +734,14 @@ function Select({
   disabled?: boolean
   info?: string
   required?: boolean
+  labelAction?: ReactNode
 }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="flex items-center gap-1.5 text-[13px] font-medium text-[#606266]">
         <span>{label}</span>
         {info && <InfoTooltip text={info} />}
+        {labelAction && <div className="ml-2">{labelAction}</div>}
       </label>
 
       <select

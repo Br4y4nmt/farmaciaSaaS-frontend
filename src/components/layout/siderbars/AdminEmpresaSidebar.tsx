@@ -41,7 +41,6 @@ const items: SidebarItem[] = [
     submenu: [
       { label: 'Punto de Venta', path: '/admin-empresa/pos' },
       { label: 'Venta Rápida', path: '/admin-empresa/pos/venta-rapida' },
-      { label: 'Buscar Producto', path: '/admin-empresa/pos/buscar-producto' },
       { label: 'Caja POS', path: '/admin-empresa/pos/caja' },
       { label: 'Apertura de Turno', path: '/admin-empresa/pos/apertura-turno' },
       { label: 'Cierre de Turno', path: '/admin-empresa/pos/cierre-turno' },
@@ -56,7 +55,7 @@ const items: SidebarItem[] = [
       { label: 'Laboratorios', path: '/admin-empresa/productos/laboratorios' },
       { label: 'Marcas', path: '/admin-empresa/productos/marcas' },
 
-      { label: 'Códigos de Barras', path: '/admin-empresa/productos/codigos-barras' },
+      //{ label: 'Códigos de Barras', path: '/admin-empresa/productos/codigos-barras' },
       { label: 'Packs / Promociones', path: '/admin-empresa/productos/promociones' },
     ],
   },
@@ -226,6 +225,7 @@ export function AdminEmpresaSidebar({ collapsed }: AdminEmpresaSidebarProps) {
   }, [location.pathname])
 
   return (
+    
     <aside className={`sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="flex items-center justify-center border-b border-slate-700 px-4 py-6">
         {collapsed ? (
@@ -334,8 +334,6 @@ export function AdminEmpresaSidebar({ collapsed }: AdminEmpresaSidebarProps) {
           })}
         </ul>
       </nav>
-
-      <div className="sidebar-footer">Version 0.0.1</div>
     </aside>
   )
 }

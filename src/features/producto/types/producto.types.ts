@@ -27,8 +27,8 @@ export type Producto = {
   afecto_igv: boolean
   estado: boolean
 
-  precio_compra: number
-  precio_venta: number
+  precio_compra: number | string
+  precio_venta: number | string
   stock_minimo: number
   stock_maximo: number
 

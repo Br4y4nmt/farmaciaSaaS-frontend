@@ -1,7 +1,17 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from 'react'
+
 import { CloseIcon } from '../../../components/icons'
 import { useCategorias } from '../../categoria/hooks/useCategorias'
 import { InfoTooltip } from '../../../components/ui/InfoTooltip'
+import { showSuccessToast } from '../../../components/ui/toast'
 import CreateCategoryModal from '../../categoria/components/CreateCategoryModal'
 import CreateLaboratoryModal from '../../laboratorio/components/CreateLaboratoryModal'
 import CreateMarcaModal from '../../marca/components/CreateMarcaModal'
@@ -75,12 +85,17 @@ export default function CreateProductModal({
   onClose,
   onSuccess,
 }: Props) {
+  const formRef = useRef<HTMLFormElement | null>(null)
+
   const [form, setForm] = useState<FormData>(initialForm)
   const [activeSection, setActiveSection] = useState<ActiveSection>('general')
+  const [pendingReportValidity, setPendingReportValidity] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
-
+  const [openCreateCategory, setOpenCreateCategory] = useState(false)
+  const [openCreateLaboratory, setOpenCreateLaboratory] = useState(false)
+  const [openCreateMarca, setOpenCreateMarca] = useState(false)
   const user = useStoredUser()
 
   const {
@@ -90,7 +105,6 @@ export default function CreateProductModal({
   } = useCategorias(user?.empresa_id, {
     estado: true,
   })
-
 
   const {
     laboratorios,
@@ -108,10 +122,6 @@ export default function CreateProductModal({
     estado: true,
   })
 
-  const [openCreateCategory, setOpenCreateCategory] = useState(false)
-  const [openCreateLaboratory, setOpenCreateLaboratory] = useState(false)
-  const [openCreateMarca, setOpenCreateMarca] = useState(false)
-
   const {
     crearProducto,
     isLoading: isCreatingProducto,
@@ -119,319 +129,246 @@ export default function CreateProductModal({
     setError: setCreateError,
   } = useCreateProducto()
 
+  useEffect(() => {
+    if (!pendingReportValidity) return
+
+    const timer = window.setTimeout(() => {
+      formRef.current?.reportValidity()
+      setPendingReportValidity(false)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [activeSection, pendingReportValidity])
+
   if (!isOpen) return null
 
-      function handleChange(
-        e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-      ) {
-        const { name, value, type } = e.target
+  function resetModal() {
+    setForm(initialForm)
+    setImageFile(null)
+    setImagePreview(null)
+    setActiveSection('general')
+    setError(null)
+    if (createError) setCreateError(null)
+  }
 
-        const checked =
-          type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined
+  function handleClose() {
+    resetModal()
+    onClose()
+  }
 
-        setForm((prev) => ({
-          ...prev,
-          [name]: type === 'checkbox' ? checked : value,
-        }))
+  function handleChange(
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) {
+    const { name, value, type } = e.target
 
-        if (error) setError(null)
-        if (createError) setCreateError(null)
-      }
+    const checked =
+      type === 'checkbox' ? (e.target as HTMLInputElement).checked : undefined
 
-      function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0]
+    let newValue: any = value
 
-        if (!file) return
-
-        if (!file.type.startsWith('image/')) {
-          setError('Solo se permiten archivos de imagen.')
-          return
-        }
-
-        setImageFile(file)
-        setImagePreview(URL.createObjectURL(file))
-        setError(null)
-      }
-
-      function handleRemoveImage() {
-        setImageFile(null)
-        setImagePreview(null)
-      }
-
-      function handleSectionChange(section: ActiveSection) {
-        setError(null)
-        setActiveSection(section)
-      }
-
-    function validateForm(): {
-      section: ActiveSection
-      message: string
-    } | null {
-      if (!form.nombre_comercial.trim()) {
-        return {
-          section: 'general',
-          message: 'Completa el campo: Nombre comercial.',
-        }
-      }
-
-      if (!form.nombre_generico.trim()) {
-        return {
-          section: 'general',
-          message: 'Completa el campo: Nombre genérico.',
-        }
-      }
-
-      if (!form.categoria_id) {
-        return {
-          section: 'general',
-          message: 'Selecciona una categoría.',
-        }
-      }
-
-      if (!form.laboratorio_id) {
-        return {
-          section: 'general',
-          message: 'Selecciona un laboratorio.',
-        }
-      }
-
-      if (!form.marca_id) {
-        return {
-          section: 'general',
-          message: 'Selecciona una marca.',
-        }
-      }
-
-      if (!imageFile) {
-        return {
-          section: 'general',
-          message: 'Selecciona una imagen del producto.',
-        }
-      }
-
-      if (!form.descripcion.trim()) {
-        return {
-          section: 'general',
-          message: 'Completa el campo: Descripción.',
-        }
-      }
-
-      if (
-        form.codigo_barras.trim() &&
-        !/^\d{8,14}$/.test(form.codigo_barras.trim())
-      ) {
-        return {
-          section: 'general',
-          message: 'El código de barras debe contener entre 8 y 14 dígitos.',
-        }
-      }
-
-      if (!form.principio_activo.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Principio activo.',
-        }
-      }
-
-      if (!form.concentracion.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Concentración.',
-        }
-      }
-
-      if (!form.presentacion.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Presentación.',
-        }
-      }
-
-      if (!form.unidad_medida.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Unidad de medida.',
-        }
-      }
-
-      if (!form.forma_farmaceutica.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Forma farmacéutica.',
-        }
-      }
-
-      if (!form.registro_sanitario.trim()) {
-        return {
-          section: 'farmaceutico',
-          message: 'Completa el campo: Registro sanitario.',
-        }
-      }
-
-      if (!form.precio_compra.trim()) {
-        return {
-          section: 'precios',
-          message: 'Completa el campo: Precio compra.',
-        }
-      }
-
-      if (!form.precio_venta.trim()) {
-        return {
-          section: 'precios',
-          message: 'Completa el campo: Precio venta.',
-        }
-      }
-
-      if (!form.stock_minimo.trim()) {
-        return {
-          section: 'precios',
-          message: 'Completa el campo: Stock mínimo.',
-        }
-      }
-
-      if (!form.stock_maximo.trim()) {
-        return {
-          section: 'precios',
-          message: 'Completa el campo: Stock máximo.',
-        }
-      }
-
-      if (Number(form.precio_compra) < 0) {
-        return {
-          section: 'precios',
-          message: 'El precio compra no puede ser negativo.',
-        }
-      }
-
-      if (Number(form.precio_venta) <= 0) {
-        return {
-          section: 'precios',
-          message: 'El precio venta debe ser mayor a 0.',
-        }
-      }
-
-      if (Number(form.stock_minimo) < 0) {
-        return {
-          section: 'precios',
-          message: 'El stock mínimo no puede ser negativo.',
-        }
-      }
-
-      if (Number(form.stock_maximo) < 0) {
-        return {
-          section: 'precios',
-          message: 'El stock máximo no puede ser negativo.',
-        }
-      }
-
-      if (Number(form.stock_maximo) < Number(form.stock_minimo)) {
-        return {
-          section: 'precios',
-          message: 'El stock máximo no puede ser menor al stock mínimo.',
-        }
-      }
-
-      return null
+    if (name === 'codigo_barras') {
+      newValue = String(value).replace(/\D/g, '')
     }
 
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : newValue,
+    }))
 
-    async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-      e.preventDefault()
+    if (error) setError(null)
+    if (createError) setCreateError(null)
+  }
 
-      const validationError = validateForm()
+  function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
 
-      if (validationError) {
-        setActiveSection(validationError.section)
-        setError(validationError.message)
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setError('Solo se permiten archivos de imagen.')
+      return
+    }
+
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    setError(null)
+  }
+
+  function handleRemoveImage() {
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
+  function handleSectionChange(section: ActiveSection) {
+    setError(null)
+
+    if (activeSection === 'general' && section !== 'general') {
+      const formElement = formRef.current
+
+      if (form.codigo_barras.trim() && formElement && !formElement.reportValidity()) {
         return
       }
-
-      const payload = new FormData()
-
-      if (form.categoria_id) {
-        payload.append('categoria_id', form.categoria_id)
-      }
-
-      if (form.laboratorio_id) {
-        payload.append('laboratorio_id', form.laboratorio_id)
-      }
-
-      if (form.marca_id) {
-        payload.append('marca_id', form.marca_id)
-      }
-
-      if (form.codigo_barras.trim()) {
-        payload.append('codigo_barras', form.codigo_barras.trim())
-      }
-
-      if (form.codigo_sunat.trim()) {
-        payload.append('codigo_sunat', form.codigo_sunat.trim())
-      }
-
-      if (form.nombre_generico.trim()) {
-        payload.append('nombre_generico', form.nombre_generico.trim())
-      }
-
-      payload.append('nombre_comercial', form.nombre_comercial.trim())
-
-      if (form.descripcion.trim()) {
-        payload.append('descripcion', form.descripcion.trim())
-      }
-
-      if (form.registro_sanitario.trim()) {
-        payload.append('registro_sanitario', form.registro_sanitario.trim())
-      }
-
-      if (form.forma_farmaceutica.trim()) {
-        payload.append('forma_farmaceutica', form.forma_farmaceutica.trim())
-      }
-
-      if (form.concentracion.trim()) {
-        payload.append('concentracion', form.concentracion.trim())
-      }
-
-      if (form.presentacion.trim()) {
-        payload.append('presentacion', form.presentacion.trim())
-      }
-
-      if (form.unidad_medida.trim()) {
-        payload.append('unidad_medida', form.unidad_medida.trim())
-      }
-
-      if (form.principio_activo.trim()) {
-        payload.append('principio_activo', form.principio_activo.trim())
-      }
-
-      payload.append('requiere_receta', String(form.requiere_receta))
-      payload.append('es_controlado', String(form.es_controlado))
-      payload.append('es_fraccionable', String(form.es_fraccionable))
-      payload.append('afecto_igv', String(form.afecto_igv))
-      payload.append('estado', String(form.estado))
-
-      payload.append('precio_compra', String(Number(form.precio_compra || 0)))
-      payload.append('precio_venta', String(Number(form.precio_venta || 0)))
-      payload.append('stock_minimo', String(Number(form.stock_minimo || 0)))
-      payload.append('stock_maximo', String(Number(form.stock_maximo || 0)))
-
-      if (imageFile) {
-        payload.append('imagen', imageFile)
-      }
-
-      const producto = await crearProducto(payload)
-
-      if (!producto) return
-
-      setForm(initialForm)
-      setImageFile(null)
-      setImagePreview(null)
-      setActiveSection('general')
-      onClose()
-      onSuccess?.()
     }
+
+    setActiveSection(section)
+  }
+
+  function getFirstIncompleteSection(): ActiveSection | null {
+    if (
+      !form.nombre_generico.trim() ||
+      !form.nombre_comercial.trim() ||
+      !form.categoria_id ||
+      !form.laboratorio_id ||
+      !form.marca_id ||
+      !form.descripcion.trim()
+    ) {
+      return 'general'
+    }
+
+    if (
+      !form.principio_activo.trim() ||
+      !form.concentracion.trim() ||
+      !form.presentacion.trim() ||
+      !form.unidad_medida.trim() ||
+      !form.forma_farmaceutica.trim()
+    ) {
+      return 'farmaceutico'
+    }
+
+    if (
+      !form.precio_compra.trim() ||
+      !form.precio_venta.trim() ||
+      !form.stock_minimo.trim() ||
+      !form.stock_maximo.trim()
+    ) {
+      return 'precios'
+    }
+
+    return null
+  }
+
+  function validateBusinessRules(): {
+    section: ActiveSection
+    message: string
+  } | null {
+    if (!imageFile) {
+      return {
+        section: 'general',
+        message: 'Selecciona una imagen del producto.',
+      }
+    }
+
+    if (Number(form.precio_compra) < 0) {
+      return {
+        section: 'precios',
+        message: 'El precio compra no puede ser negativo.',
+      }
+    }
+
+    if (Number(form.precio_venta) <= 0) {
+      return {
+        section: 'precios',
+        message: 'El precio venta debe ser mayor a 0.',
+      }
+    }
+
+    if (Number(form.stock_minimo) < 0) {
+      return {
+        section: 'precios',
+        message: 'El stock mínimo no puede ser negativo.',
+      }
+    }
+
+    if (Number(form.stock_maximo) < 0) {
+      return {
+        section: 'precios',
+        message: 'El stock máximo no puede ser negativo.',
+      }
+    }
+
+    if (Number(form.stock_maximo) < Number(form.stock_minimo)) {
+      return {
+        section: 'precios',
+        message: 'El stock máximo no puede ser menor al stock mínimo.',
+      }
+    }
+
+    return null
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+
+    const incompleteSection = getFirstIncompleteSection()
+
+    if (incompleteSection) {
+      setActiveSection(incompleteSection)
+      setPendingReportValidity(true)
+      return
+    }
+
+    const businessError = validateBusinessRules()
+
+    if (businessError) {
+      setActiveSection(businessError.section)
+      setError(businessError.message)
+      return
+    }
+
+    const payload = new FormData()
+
+    payload.append('categoria_id', form.categoria_id)
+    payload.append('laboratorio_id', form.laboratorio_id)
+    payload.append('marca_id', form.marca_id)
+
+    if (form.codigo_barras.trim()) {
+      payload.append('codigo_barras', form.codigo_barras.trim())
+    }
+
+    if (form.codigo_sunat.trim()) {
+      payload.append('codigo_sunat', form.codigo_sunat.trim())
+    }
+
+    if (form.registro_sanitario.trim()) {
+    payload.append('registro_sanitario', form.registro_sanitario.trim())
+  }
+  
+    payload.append('nombre_generico', form.nombre_generico.trim())
+    payload.append('nombre_comercial', form.nombre_comercial.trim())
+    payload.append('descripcion', form.descripcion.trim())
+    payload.append('forma_farmaceutica', form.forma_farmaceutica.trim())
+    payload.append('concentracion', form.concentracion.trim())
+    payload.append('presentacion', form.presentacion.trim())
+    payload.append('unidad_medida', form.unidad_medida.trim())
+    payload.append('principio_activo', form.principio_activo.trim())
+    payload.append('requiere_receta', String(form.requiere_receta))
+    payload.append('es_controlado', String(form.es_controlado))
+    payload.append('es_fraccionable', String(form.es_fraccionable))
+    payload.append('afecto_igv', String(form.afecto_igv))
+    payload.append('estado', String(form.estado))
+    payload.append('precio_compra', String(Number(form.precio_compra || 0)))
+    payload.append('precio_venta', String(Number(form.precio_venta || 0)))
+    payload.append('stock_minimo', String(Number(form.stock_minimo || 0)))
+    payload.append('stock_maximo', String(Number(form.stock_maximo || 0)))
+
+    if (imageFile) {
+      payload.append('imagen', imageFile)
+    }
+
+    const producto = await crearProducto(payload)
+
+    if (!producto) return
+
+    showSuccessToast('Producto creado', 'El producto se guardó correctamente.')
+
+    resetModal()
+    onClose()
+    onSuccess?.()
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
 
       <div className="relative w-full max-w-3xl rounded-sm border border-slate-200 bg-white shadow-xl">
         <div className="flex items-center justify-between px-6 py-4">
@@ -441,14 +378,18 @@ export default function CreateProductModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="cursor-pointer text-slate-400 transition-colors hover:text-slate-600"
           >
             <CloseIcon />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          className="space-y-5 px-6 py-5"
+        >
           <div className="border-b border-slate-200">
             <div className="flex gap-6 overflow-x-auto">
               <TabButton
@@ -484,13 +425,19 @@ export default function CreateProductModal({
                 name="codigo_barras"
                 value={form.codigo_barras}
                 onChange={handleChange}
+                placeholder="Escanea o escribe el código"
+                inputMode="numeric"
+                maxLength={14}
+                pattern="^\d{8,14}$"
+                title="El código de barras debe tener entre 8 y 14 dígitos."
+                info="Si el producto ya tiene código de barras, escanéalo o escríbelo aquí. Si no tiene, deja este campo vacío y el sistema generará uno automáticamente al guardar."
               />
-
               <Input
                 label="Nombre genérico"
                 name="nombre_generico"
                 value={form.nombre_generico}
                 onChange={handleChange}
+                required
               />
 
               <div className="col-span-2">
@@ -505,7 +452,9 @@ export default function CreateProductModal({
 
               <div className="col-span-1 flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <label className="text-[13px] font-medium text-[#606266]">Categoría</label>
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Categoría
+                  </label>
 
                   <button
                     type="button"
@@ -521,15 +470,20 @@ export default function CreateProductModal({
                   value={form.categoria_id}
                   onChange={handleChange}
                   disabled={isLoadingCategorias}
+                  required
                   className="w-full cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                 >
                   <option value="" disabled>
-                    {isLoadingCategorias ? 'Cargando categorías...' : 'Seleccionar categoría'}
+                    {isLoadingCategorias
+                      ? 'Cargando categorías...'
+                      : 'Seleccionar categoría'}
                   </option>
 
                   {categorias.map((categoria) => (
                     <option key={categoria.id} value={String(categoria.id)}>
-                      {categoria.categoria_padre ? `${categoria.categoria_padre.nombre} → ${categoria.nombre}` : categoria.nombre}
+                      {categoria.categoria_padre
+                        ? `${categoria.categoria_padre.nombre} → ${categoria.nombre}`
+                        : categoria.nombre}
                     </option>
                   ))}
                 </select>
@@ -537,7 +491,9 @@ export default function CreateProductModal({
 
               <div className="col-span-1 flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <label className="text-[13px] font-medium text-[#606266]">Laboratorio</label>
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Laboratorio
+                  </label>
 
                   <button
                     type="button"
@@ -553,10 +509,13 @@ export default function CreateProductModal({
                   value={form.laboratorio_id}
                   onChange={handleChange}
                   disabled={isLoadingLaboratorios}
+                  required
                   className="w-full cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                 >
                   <option value="" disabled>
-                    {isLoadingLaboratorios ? 'Cargando laboratorios...' : 'Seleccionar laboratorio'}
+                    {isLoadingLaboratorios
+                      ? 'Cargando laboratorios...'
+                      : 'Seleccionar laboratorio'}
                   </option>
 
                   {laboratorios.map((laboratorio) => (
@@ -569,7 +528,9 @@ export default function CreateProductModal({
 
               <div className="col-span-1 flex flex-col gap-1">
                 <div className="flex items-center gap-2">
-                  <label className="text-[13px] font-medium text-[#606266]">Marca</label>
+                  <label className="text-[13px] font-medium text-[#606266]">
+                    Marca
+                  </label>
 
                   <button
                     type="button"
@@ -585,10 +546,13 @@ export default function CreateProductModal({
                   value={form.marca_id}
                   onChange={handleChange}
                   disabled={isLoadingMarcas}
+                  required
                   className="w-full cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
                 >
                   <option value="" disabled>
-                    {isLoadingMarcas ? 'Cargando marcas...' : 'Seleccionar marca'}
+                    {isLoadingMarcas
+                      ? 'Cargando marcas...'
+                      : 'Seleccionar marca'}
                   </option>
 
                   {marcas.map((marca) => (
@@ -658,6 +622,7 @@ export default function CreateProductModal({
                   value={form.descripcion}
                   onChange={handleChange}
                   rows={3}
+                  required
                   className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                 />
               </div>
@@ -671,6 +636,7 @@ export default function CreateProductModal({
                 name="principio_activo"
                 value={form.principio_activo}
                 onChange={handleChange}
+                required
                 info="Sustancia principal que produce el efecto del medicamento. Ejemplo: Paracetamol, Ibuprofeno, Amoxicilina."
               />
 
@@ -679,6 +645,7 @@ export default function CreateProductModal({
                 name="concentracion"
                 value={form.concentracion}
                 onChange={handleChange}
+                required
                 info="Cantidad del principio activo. Ejemplo: 500 mg, 250 mg/5 ml, 1 g."
               />
 
@@ -687,6 +654,7 @@ export default function CreateProductModal({
                 name="presentacion"
                 value={form.presentacion}
                 onChange={handleChange}
+                required
                 info="Forma en la que se comercializa el producto. Ejemplo: Caja x 100 tabletas, Blíster x 10, Frasco x 120 ml."
               />
 
@@ -695,6 +663,7 @@ export default function CreateProductModal({
                 name="unidad_medida"
                 value={form.unidad_medida}
                 onChange={handleChange}
+                required
                 info="Unidad base para venta o control de stock. Ejemplo: Tableta, Cápsula, Frasco, Ampolla, Sobre."
               />
 
@@ -703,16 +672,17 @@ export default function CreateProductModal({
                 name="forma_farmaceutica"
                 value={form.forma_farmaceutica}
                 onChange={handleChange}
+                required
                 info="Forma física del medicamento. Ejemplo: Tableta, Cápsula, Jarabe, Crema, Gotas, Inyectable."
               />
 
-              <Input
-                label="Registro sanitario"
-                name="registro_sanitario"
-                value={form.registro_sanitario}
-                onChange={handleChange}
-                info="Código de autorización sanitaria del producto. Puede dejarse vacío si aún no lo tienes."
-              />
+                <Input
+                  label="Registro sanitario"
+                  name="registro_sanitario"
+                  value={form.registro_sanitario}
+                  onChange={handleChange}
+                  info="Código de autorización sanitaria del producto. Puede dejarse vacío si aún no lo tienes."
+                />
 
               <Input
                 label="Código SUNAT"
@@ -732,6 +702,9 @@ export default function CreateProductModal({
                 name="precio_compra"
                 value={form.precio_compra}
                 onChange={handleChange}
+                required
+                min={0}
+                step="0.01"
                 info="Costo unitario del producto para la empresa. Ejemplo: 0.08 por tableta."
               />
 
@@ -741,6 +714,9 @@ export default function CreateProductModal({
                 name="precio_venta"
                 value={form.precio_venta}
                 onChange={handleChange}
+                required
+                min={0.01}
+                step="0.01"
                 info="Precio unitario al que se venderá al cliente. Ejemplo: 0.20 por tableta."
               />
 
@@ -750,6 +726,9 @@ export default function CreateProductModal({
                 name="stock_minimo"
                 value={form.stock_minimo}
                 onChange={handleChange}
+                required
+                min={0}
+                step="1"
                 info="Cantidad mínima antes de generar una alerta de reposición. Ejemplo: 20 unidades."
               />
 
@@ -759,6 +738,9 @@ export default function CreateProductModal({
                 name="stock_maximo"
                 value={form.stock_maximo}
                 onChange={handleChange}
+                required
+                min={0}
+                step="1"
                 info="Cantidad máxima recomendada para mantener en inventario. Ejemplo: 500 unidades."
               />
             </div>
@@ -803,7 +785,7 @@ export default function CreateProductModal({
             </div>
           )}
 
-         {(error || createError) && (
+          {(error || createError) && (
             <div className="rounded bg-red-50 p-3 text-sm text-red-600">
               {error || createError}
             </div>
@@ -812,7 +794,7 @@ export default function CreateProductModal({
           <div className="flex justify-end gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="cursor-pointer rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50"
             >
               Cancelar
@@ -854,7 +836,6 @@ export default function CreateProductModal({
             await refetchMarcas()
           }}
         />
-
       </div>
     </div>
   )
@@ -892,68 +873,55 @@ function Input({
   type = 'text',
   required = false,
   info,
+  labelAction,
+  placeholder,
+  inputMode,
+  maxLength,
+  min,
+  step,
+  pattern,
+  title,
 }: {
   label: string
   name: string
   value: string
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void
+  onChange: (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => void
   type?: string
   required?: boolean
   info?: string
+  labelAction?: ReactNode
+  placeholder?: string
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode']
+  maxLength?: number
+  min?: number
+  step?: string
+  pattern?: string
+  title?: string
 }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="flex items-center gap-1.5 text-[13px] font-medium text-[#606266]">
         <span>{label}</span>
         {info && <InfoTooltip text={info} />}
+        {labelAction && <div className="ml-2">{labelAction}</div>}
       </label>
-
       <input
         type={type}
         name={name}
         value={value}
         onChange={onChange}
         required={required}
+        placeholder={placeholder}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        min={min}
+        step={step}
+        pattern={pattern}
+        title={title}
         className="rounded border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
       />
-    </div>
-  )
-}
-
-function Select({
-  label,
-  name,
-  value,
-  onChange,
-  options,
-  disabled = false,
-}: {
-  label: string
-  name: string
-  value: string
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void
-  options: [string, string][]
-  disabled?: boolean
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[13px] font-medium text-[#606266]">
-        {label}
-      </label>
-
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className="cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
-      >
-        {options.map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
     </div>
   )
 }

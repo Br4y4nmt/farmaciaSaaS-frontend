@@ -24,6 +24,7 @@ import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
 import { GerentePage } from '../../pages/gerente/GerentePage'
 import { InventarioPage } from '../../pages/inventario/InventarioPage'
 import LotesPage from '../../pages/admin-empresa/LotesPage'
+import VentaRapidaPage from '../../pages/admin-empresa/VentaRapidaPage'
 import StockCriticoPage from '../../pages/admin-empresa/StockCriticoPage'
 import ProductosPorVencerPage from '../../pages/admin-empresa/ProductosPorVencerPage'
 import MovimientosStockPage from '../../pages/admin-empresa/MovimientosStockPage'
@@ -113,6 +114,11 @@ export function AppRoutes() {
         <Route
           path="/admin-empresa/compras"
           element={<ComprasPage />}
+        />
+
+        <Route
+          path="/admin-empresa/pos/venta-rapida"
+          element={<VentaRapidaPage />}
         />
 
         <Route
