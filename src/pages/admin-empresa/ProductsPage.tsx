@@ -7,6 +7,7 @@ import { AdminEmpresaSidebar } from '../../components/layout/siderbars/AdminEmpr
 import { DataTable } from '../../components/ui/DataTable'
 import type { DataTableColumn } from '../../components/ui/DataTable'
 import { PageHeader } from '../../components/ui/PageHeader'
+import { TableFilterBar } from '../../components/ui/TableFilterBar'
 
 import CreateProductModal from '../../features/producto/components/CreateProductModal'
 import EditProductModal from '../../features/producto/components/EditProductModal'
@@ -292,7 +293,7 @@ function ProductsPage() {
 
   return (
     <div className="flex min-h-screen bg-slate-100">
-      <AdminEmpresaSidebar collapsed={collapsed} onNavigateCollapse={() => setCollapsed(true)} />
+      <AdminEmpresaSidebar collapsed={collapsed} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminEmpresaHeader
@@ -342,6 +343,7 @@ function ProductsPage() {
             isLoading={isLoadingProductos}
             loadingMessage="Cargando productos..."
             emptyMessage="No existen productos registrados"
+            toolbarContent={<TableFilterBar />}
           />
         </main>
       </div>

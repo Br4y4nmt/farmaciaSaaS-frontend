@@ -23,8 +23,10 @@ import { ContadorPage } from '../../pages/contador/ContadorPage'
 import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
 import { GerentePage } from '../../pages/gerente/GerentePage'
 import { InventarioPage } from '../../pages/inventario/InventarioPage'
+import UsuariosPage from '../../pages/admin-empresa/UsuariosPage'
 import LotesPage from '../../pages/admin-empresa/LotesPage'
 import VentaRapidaPage from '../../pages/admin-empresa/VentaRapidaPage'
+import StockPorSucursalPage from '../../pages/admin-empresa/StockPorSucursalPage'
 import StockCriticoPage from '../../pages/admin-empresa/StockCriticoPage'
 import ProductosPorVencerPage from '../../pages/admin-empresa/ProductosPorVencerPage'
 import MovimientosStockPage from '../../pages/admin-empresa/MovimientosStockPage'
@@ -97,6 +99,11 @@ export function AppRoutes() {
         />
 
         <Route
+          path="/admin-empresa/usuarios-locales/usuarios"
+          element={<UsuariosPage />}
+        />
+
+        <Route
           path="/admin-empresa/usuarios-locales/locales"
           element={<LocalesPage />}
         />
@@ -139,6 +146,11 @@ export function AppRoutes() {
         <Route
           path="/admin-empresa/inventario/movimientos"
           element={<MovimientosStockPage />}
+        />
+
+        <Route
+          path="/admin-empresa/inventario/stock-por-sucursal"
+          element={<StockPorSucursalPage />}
         />
       </Route>
 

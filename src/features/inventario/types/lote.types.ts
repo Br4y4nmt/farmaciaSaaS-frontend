@@ -21,6 +21,12 @@ export type LoteSucursal = {
   id: number
   nombre: string
   codigo?: string | null
+
+  direccion_fiscal?: string | null
+  direccion_comercial?: string | null
+  departamento?: string | null
+  provincia?: string | null
+  distrito?: string | null
 }
 
 export type LoteCompra = {

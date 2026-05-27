@@ -222,6 +222,13 @@ export default function CreateProveedorModal({
       }
     }
 
+    if (!form.razon_social.trim()) {
+      return {
+        section: 'general',
+        message: 'La razón social es obligatoria.',
+      }
+    }
+
     if (
       form.tipo_documento === 'RUC' &&
       !/^\d{11}$/.test(form.numero_documento.trim())
@@ -423,7 +430,8 @@ export default function CreateProveedorModal({
                   name="razon_social"
                   value={form.razon_social}
                   onChange={handleChange}
-                  info="Opcional. Nombre legal del proveedor registrado en SUNAT o documento equivalente."
+                  required
+                  info="Nombre legal del proveedor registrado en SUNAT o documento equivalente."
                 />
               </div>
 

@@ -86,7 +86,7 @@ function CategoriesPage() {
   const columns: DataTableColumn<Category>[] = [
     {
       key: 'id',
-      header: '#',
+      header: 'N°',
       render: (_, index) => index + 1,
     },
     {

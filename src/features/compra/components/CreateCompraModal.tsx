@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 
-import { CloseIcon } from '../../../components/icons'
+import { CloseIcon, TrashIcon } from '../../../components/icons'
 import { InfoTooltip } from '../../../components/ui/InfoTooltip'
+import { showSuccessToast } from '../../../components/ui/toast'
 
 import { useStoredUser } from '../../auth/hooks/useStoredUser'
 import { useProveedores } from '../../proveedor/hooks/useProveedores'
 import CreateProveedorModal from '../../proveedor/components/CreateProveedorModal'
+import CreateProductModal from '../../producto/components/CreateProductModal'
 import { useProductos } from '../../producto/hooks/useProductos'
 import { useLocales } from '../../empresa/hooks/useLocales'
 import { useCreateCompra } from '../hooks/useCreateCompra'
@@ -81,7 +83,8 @@ export default function CreateCompraModal({
 
   const { proveedores, isLoading: isLoadingProveedores, refetch: refetchProveedores } = useProveedores()
   const [openCreateProveedor, setOpenCreateProveedor] = useState(false)
-  const { productos, isLoading: isLoadingProductos } = useProductos()
+  const { productos, isLoading: isLoadingProductos, refetch: refetchProductos } = useProductos()
+  const [openCreateProducto, setOpenCreateProducto] = useState(false)
   const { locales, isLoading: isLoadingLocales } = useLocales()
 
   const { crearCompra, isLoading: isCreatingCompra } = useCreateCompra()
@@ -251,6 +254,8 @@ export default function CreateCompraModal({
 
     if (!compra) return
 
+    showSuccessToast('Compra creada', 'La compra se guardó correctamente.')
+
     resetForm()
     onClose()
     onSuccess?.()
@@ -286,7 +291,6 @@ export default function CreateCompraModal({
                 active={activeSection === 'datos'}
                 onClick={() => validateBeforeGoToSection('datos')}
               />
-
               <TabButton
                 label="Productos"
                 active={activeSection === 'productos'}
@@ -444,7 +448,19 @@ export default function CreateCompraModal({
                 <table className="w-full min-w-[900px] border-collapse text-sm">
                   <thead className="bg-slate-50">
                     <tr className="text-left text-xs font-medium text-slate-500">
-                      <th className="px-3 py-2">Producto</th>
+                      <th className="px-3 py-2">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Producto</span>
+                          <button
+                            type="button"
+                            onClick={() => setOpenCreateProducto(true)}
+                            className="cursor-pointer text-xs text-sky-600 transition hover:text-sky-700"
+                            aria-label="Crear producto"
+                          >
+                            [+ Nuevo]
+                          </button>
+                        </div>
+                      </th>
                       <th className="px-3 py-2">Cantidad</th>
                       <th className="px-3 py-2">Costo unitario</th>
                       <th className="px-3 py-2">
@@ -552,9 +568,11 @@ export default function CreateCompraModal({
                               type="button"
                               onClick={() => handleRemoveDetalle(index)}
                               disabled={detalles.length === 1}
-                              className="rounded border border-red-200 px-2 py-1 text-xs text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Quitar"
+                              aria-label="Quitar producto"
+                              className="cursor-pointer rounded border border-red-200 px-2 py-1 text-xs text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center"
                             >
-                              Quitar
+                              <TrashIcon className="h-4 w-4" />
                             </button>
                           </td>
                         </tr>
@@ -648,6 +666,14 @@ export default function CreateCompraModal({
           onSuccess={async () => {
             setOpenCreateProveedor(false)
             if (refetchProveedores) await refetchProveedores()
+          }}
+        />
+        <CreateProductModal
+          isOpen={openCreateProducto}
+          onClose={() => setOpenCreateProducto(false)}
+          onSuccess={async () => {
+            setOpenCreateProducto(false)
+            if (refetchProductos) await refetchProductos()
           }}
         />
       </div>

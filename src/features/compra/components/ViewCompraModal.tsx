@@ -290,15 +290,7 @@ export default function ViewCompraModal({ isOpen, compra, onClose }: Props) {
             </div>
           </div>
 
-          <div className="mt-5 flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="cursor-pointer rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-            >
-              Cerrar
-            </button>
-          </div>
+          {/* Footer close button removed as requested */}
         </div>
       </div>
     </div>

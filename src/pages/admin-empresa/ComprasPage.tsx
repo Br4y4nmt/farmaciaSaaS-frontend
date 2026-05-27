@@ -1,23 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
 import { AdminEmpresaHeader } from '../../components/layout/headers/AdminEmpresaHeader'
 import { AdminEmpresaSidebar } from '../../components/layout/siderbars/AdminEmpresaSidebar'
 import { DataTable } from '../../components/ui/DataTable'
 import type { DataTableColumn } from '../../components/ui/DataTable'
 import { PageHeader } from '../../components/ui/PageHeader'
-
 import { CompraIcon, ExportIcon, ImportIcon } from '../../components/icons'
-
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
+import { showQuestionAlert } from '../../components/ui/alerts'
+import { showSuccessToast, showErrorToast } from '../../components/ui/toast'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
-
 import CreateCompraModal from '../../features/compra/components/CreateCompraModal'
 import ViewCompraModal from '../../features/compra/components/ViewCompraModal'
-
 import { useCompras } from '../../features/compra/hooks/useCompras'
 import { useAnularCompra } from '../../features/compra/hooks/useAnularCompra'
-
 import type { Compra } from '../../features/compra/types/compra.types'
 
 function ComprasPage() {
@@ -96,11 +92,14 @@ function ComprasPage() {
       return
     }
 
-    const confirmAnular = window.confirm(
-      `¿Seguro que deseas anular la compra ${getComprobante(compra)}?\n\nEsta acción restará el stock ingresado, actualizará los lotes y registrará un movimiento de anulación en el kardex.`,
-    )
+    const confirmed = await showQuestionAlert({
+      title: 'Anular compra',
+      text: `¿Seguro que deseas anular la compra ${getComprobante(compra)}? Esta acción restará el stock ingresado, actualizará los lotes y registrará un movimiento de anulación en el kardex.`,
+      confirmButtonText: 'Sí, anular',
+      cancelButtonText: 'Cancelar',
+    })
 
-    if (!confirmAnular) return
+    if (!confirmed) return
 
     const motivo =
       window.prompt(
@@ -110,7 +109,12 @@ function ComprasPage() {
 
     const compraAnulada = await anularCompra(compra.id, motivo)
 
-    if (!compraAnulada) return
+    if (!compraAnulada) {
+      showErrorToast('No se pudo anular la compra', anularError || '')
+      return
+    }
+
+    showSuccessToast('Compra anulada', 'La compra se anuló correctamente.')
 
     refetchCompras()
   }

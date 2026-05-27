@@ -64,7 +64,7 @@ const items: SidebarItem[] = [
     icon: <InventoryIcon />,
     submenu: [
       { label: 'Stock General', path: '/admin-empresa/stock-general' },
-      { label: 'Stock por Sucursal', path: '/admin-empresa/inventario/stock-sucursal' },
+      { label: 'Stock por Sucursal', path: '/admin-empresa/inventario/stock-por-sucursal' },
       { label: 'Lotes', path: '/admin-empresa/inventario/lotes' },
       //{ label: 'Kardex', path: '/admin-empresa/inventario/kardex' },
       { label: 'Movimientos / Kardex', path: '/admin-empresa/inventario/movimientos' },
