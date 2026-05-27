@@ -62,7 +62,7 @@ export function LocalesPage() {
     }
 
     refetch()
-    showSuccessToast('Local eliminado', '')
+    showSuccessToast('Local eliminado', 'El local ha sido eliminado exitosamente.')
   }
 
   const columns: DataTableColumn<Sucursal>[] = [
@@ -93,15 +93,15 @@ export function LocalesPage() {
       key: 'estado',
       header: 'Estado',
       render: (sucursal) => (
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-medium ${
-            sucursal.estado
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
-          }`}
-        >
-          {sucursal.estado ? 'Activo' : 'Inactivo'}
-        </span>
+      <span
+        className={`rounded px-3 py-1 text-xs font-medium ${
+          sucursal.estado
+            ? 'bg-green-100 text-green-700'
+            : 'bg-red-100 text-red-700'
+        }`}
+      >
+        {sucursal.estado ? 'Activo' : 'Inactivo'}
+      </span>
       ),
     },
     {

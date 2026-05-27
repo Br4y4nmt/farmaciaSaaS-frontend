@@ -4,7 +4,8 @@ import type {
   AuthLoginResponse,
   LoginApiResponse,
 } from '../types/auth.types'
- 
+import { clearStoredUser } from '../utils/authStorage'
+
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthLoginResponse> {
     const payload = {
@@ -15,9 +16,8 @@ export const authService = {
     const { data } = await api.post<LoginApiResponse>('/auth/login', payload)
     return data.data
   },
- 
+
   logout() {
-    localStorage.removeItem('token')
+    clearStoredUser()
   },
 }
- 

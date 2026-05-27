@@ -12,10 +12,12 @@ import { ExportIcon, ImportIcon, ProveedorIcon } from '../../components/icons'
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
 import EditProveedorModal from '../../features/proveedor/components/EditProveedorModal'
-
 import CreateProveedorModal from '../../features/proveedor/components/CreateProveedorModal'
 import { useProveedores } from '../../features/proveedor/hooks/useProveedores'
 import { useDeleteProveedor } from '../../features/proveedor/hooks/useDeleteProveedor'
+import { useUpdateProveedor } from '../../features/proveedor/hooks/useUpdateProveedor'
+import { showQuestionAlert } from '../../components/ui/alerts'
+import { showSuccessToast, showErrorToast } from '../../components/ui/toast'
 import type { Proveedor } from '../../features/proveedor/types/proveedor.types'
 
 function ProveedoresPage() {
@@ -26,7 +28,9 @@ function ProveedoresPage() {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
   const [openCreateModal, setOpenCreateModal] = useState(false)
   const [openEditModal, setOpenEditModal] = useState(false)
-  const [selectedProveedor, setSelectedProveedor] = useState<Proveedor | null>(null)
+  const [selectedProveedor, setSelectedProveedor] = useState<Proveedor | null>(
+    null,
+  )
   const actionsMenuRef = useRef<HTMLDivElement | null>(null)
 
   const {
@@ -43,6 +47,13 @@ function ProveedoresPage() {
     setError: setDeleteError,
   } = useDeleteProveedor()
 
+  const {
+    actualizarProveedor,
+    isLoading: isUpdatingProveedor,
+    error: updateError,
+    setError: setUpdateError,
+  } = useUpdateProveedor()
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -53,11 +64,8 @@ function ProveedoresPage() {
       }
     }
 
-    document.addEventListener('click', handleClickOutside)
-
-    return () => {
-      document.removeEventListener('click', handleClickOutside)
-    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   function handleLogout() {
@@ -92,22 +100,98 @@ function ProveedoresPage() {
     setOpenMenuId(null)
     setDeleteError(null)
 
-    const confirmDelete = window.confirm(
-      `¿Seguro que deseas eliminar el proveedor "${proveedor.razon_social}"?`,
-    )
+    const confirmed = await showQuestionAlert({
+      title: 'Eliminar proveedor',
+      text: `¿Seguro que deseas eliminar el proveedor "${
+        proveedor.razon_social || proveedor.numero_documento
+      }"?`,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    })
 
-    if (!confirmDelete) return
+    if (!confirmed) return
 
     const deleted = await eliminarProveedor(proveedor.id)
 
-    if (!deleted) return
+    if (!deleted) {
+      showErrorToast(
+        'Error al eliminar',
+        deleteError || 'No se pudo eliminar el proveedor',
+      )
+
+      return
+    }
+
+    showSuccessToast(
+      'Proveedor eliminado',
+      'El proveedor fue eliminado correctamente.',
+    )
 
     refetchProveedores()
   }
 
-  function handleDisable(proveedor: Proveedor) {
-    console.log('inhabilitar proveedor', proveedor)
+  async function handleToggleEstado(proveedor: Proveedor) {
     setOpenMenuId(null)
+    setUpdateError(null)
+
+    const nuevoEstado = !proveedor.estado
+
+    const confirmed = await showQuestionAlert({
+      title: nuevoEstado ? 'Habilitar proveedor' : 'Inhabilitar proveedor',
+      text: `¿Seguro que deseas ${
+        nuevoEstado ? 'habilitar' : 'inhabilitar'
+      } el proveedor "${
+        proveedor.razon_social || proveedor.numero_documento
+      }"?`,
+      confirmButtonText: nuevoEstado ? 'Sí, habilitar' : 'Sí, inhabilitar',
+      cancelButtonText: 'Cancelar',
+    })
+
+    if (!confirmed) return
+
+    const payload = {
+      empresa_id: Number(user?.empresa_id),
+      tipo_documento: proveedor.tipo_documento,
+      numero_documento: proveedor.numero_documento,
+      razon_social: proveedor.razon_social || '',
+      nombre_comercial: proveedor.nombre_comercial || '',
+
+      direccion: proveedor.direccion || '',
+      departamento: proveedor.departamento || '',
+      provincia: proveedor.provincia || '',
+      distrito: proveedor.distrito || '',
+
+      telefono: proveedor.telefono || '',
+      celular: proveedor.celular || '',
+      correo: proveedor.correo || '',
+
+      contacto_nombre: proveedor.contacto_nombre || '',
+      contacto_telefono: proveedor.contacto_telefono || '',
+      contacto_correo: proveedor.contacto_correo || '',
+
+      observacion: proveedor.observacion || '',
+      estado: nuevoEstado,
+    }
+
+    const updated = await actualizarProveedor(proveedor.id, payload)
+
+    if (!updated) {
+      showErrorToast(
+        nuevoEstado ? 'Error al habilitar' : 'Error al inhabilitar',
+        updateError || 'No se pudo actualizar el estado del proveedor.',
+      )
+
+      return
+    }
+
+    showSuccessToast(
+      nuevoEstado ? 'Proveedor habilitado' : 'Proveedor inhabilitado',
+      nuevoEstado
+        ? 'El proveedor fue habilitado correctamente.'
+        : 'El proveedor fue inhabilitado correctamente.',
+    )
+
+    refetchProveedores()
   }
 
   const columns: DataTableColumn<Proveedor>[] = [
@@ -124,7 +208,6 @@ function ProveedoresPage() {
           <p className="font-medium text-slate-800">
             {proveedor.numero_documento || '-'}
           </p>
-
           <p className="text-xs text-slate-500">
             {proveedor.tipo_documento || 'Sin tipo'}
           </p>
@@ -137,9 +220,8 @@ function ProveedoresPage() {
       render: (proveedor) => (
         <div>
           <p className="font-medium text-slate-800">
-            {proveedor.razon_social}
+            {proveedor.razon_social || proveedor.numero_documento || '-'}
           </p>
-
           <p className="text-xs text-slate-500">
             {proveedor.nombre_comercial || 'Sin nombre comercial'}
           </p>
@@ -173,7 +255,6 @@ function ProveedoresPage() {
           <p className="text-sm text-slate-700">
             {proveedor.contacto_nombre || '-'}
           </p>
-
           <p className="text-xs text-slate-500">
             {proveedor.contacto_telefono || proveedor.contacto_correo || ''}
           </p>
@@ -185,7 +266,7 @@ function ProveedoresPage() {
       header: 'Estado',
       render: (proveedor) => (
         <span
-          className={`rounded-full px-2 py-1 text-xs font-medium ${
+          className={`rounded px-2 py-1 text-xs font-medium ${
             proveedor.estado
               ? 'bg-emerald-50 text-emerald-700'
               : 'bg-red-50 text-red-700'
@@ -196,7 +277,7 @@ function ProveedoresPage() {
       ),
     },
     {
-      key: 'id',
+      key: 'acciones' as keyof Proveedor,
       header: 'Acciones',
       render: (proveedor) => (
         <div ref={actionsMenuRef} className="relative flex justify-end">
@@ -204,7 +285,6 @@ function ProveedoresPage() {
             type="button"
             onClick={(e) => {
               e.stopPropagation()
-
               setOpenMenuId((current) =>
                 current === proveedor.id ? null : proveedor.id,
               )
@@ -218,16 +298,16 @@ function ProveedoresPage() {
           {openMenuId === proveedor.id && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="absolute right-0 top-8 z-30 w-35 rounded border border-slate-200 bg-white py-1 shadow-lg"
+              className="fixed z-[9999] w-36 rounded border border-slate-200 bg-white py-1 shadow-lg"
+              style={{
+                top: actionsMenuRef.current
+                  ? actionsMenuRef.current.getBoundingClientRect().bottom + 4
+                  : 0,
+                left: actionsMenuRef.current
+                  ? actionsMenuRef.current.getBoundingClientRect().right - 144
+                  : 0,
+              }}
             >
-              <button
-                type="button"
-                onClick={() => handleView(proveedor)}
-                className="block w-full px-3 py-1.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-              >
-                Ver
-              </button>
-
               <button
                 type="button"
                 onClick={() => handleEdit(proveedor)}
@@ -247,10 +327,11 @@ function ProveedoresPage() {
 
               <button
                 type="button"
-                onClick={() => handleDisable(proveedor)}
-                className="block w-full px-3 py-1.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                onClick={() => handleToggleEstado(proveedor)}
+                disabled={isUpdatingProveedor}
+                className="block w-full px-3 py-1.5 text-left text-xs text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Inhabilitar
+                {proveedor.estado ? 'Inhabilitar' : 'Habilitar'}
               </button>
             </div>
           )}
@@ -298,9 +379,9 @@ function ProveedoresPage() {
         />
 
         <main className="px-8 py-5">
-          {(error || deleteError) && (
+          {(error || deleteError || updateError) && (
             <div className="mb-4 rounded bg-red-50 px-4 py-3 text-sm text-red-600">
-              {error || deleteError}
+              {error || deleteError || updateError}
             </div>
           )}
 
@@ -315,28 +396,28 @@ function ProveedoresPage() {
         </main>
       </div>
 
-        <CreateProveedorModal
+      <CreateProveedorModal
         isOpen={openCreateModal}
         onClose={() => setOpenCreateModal(false)}
         onSuccess={() => {
-            setOpenCreateModal(false)
-            refetchProveedores()
+          setOpenCreateModal(false)
+          refetchProveedores()
         }}
-        />
+      />
 
-        <EditProveedorModal
-          isOpen={openEditModal}
-          proveedor={selectedProveedor}
-          onClose={() => {
-            setOpenEditModal(false)
-            setSelectedProveedor(null)
-          }}
-          onSuccess={() => {
-            setOpenEditModal(false)
-            setSelectedProveedor(null)
-            refetchProveedores()
-          }}
-        />
+      <EditProveedorModal
+        isOpen={openEditModal}
+        proveedor={selectedProveedor}
+        onClose={() => {
+          setOpenEditModal(false)
+          setSelectedProveedor(null)
+        }}
+        onSuccess={() => {
+          setOpenEditModal(false)
+          setSelectedProveedor(null)
+          refetchProveedores()
+        }}
+      />
     </div>
   )
 }

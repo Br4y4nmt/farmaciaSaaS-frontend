@@ -200,9 +200,10 @@ const items: SidebarItem[] = [
 
 type AdminEmpresaSidebarProps = {
   collapsed: boolean
+  onNavigateCollapse?: () => void
 }
 
-export function AdminEmpresaSidebar({ collapsed }: AdminEmpresaSidebarProps) {
+export function AdminEmpresaSidebar({ collapsed, onNavigateCollapse }: AdminEmpresaSidebarProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -267,6 +268,7 @@ export function AdminEmpresaSidebar({ collapsed }: AdminEmpresaSidebarProps) {
 
                     if (item.path) {
                       navigate(item.path)
+                      if (onNavigateCollapse) onNavigateCollapse()
                     }
                   }}
                   className={`sidebar-button ${
@@ -317,7 +319,10 @@ export function AdminEmpresaSidebar({ collapsed }: AdminEmpresaSidebarProps) {
                         <li key={sub.path}>
                           <button
                             type="button"
-                            onClick={() => navigate(sub.path)}
+                            onClick={() => {
+                              navigate(sub.path)
+                              if (onNavigateCollapse) onNavigateCollapse()
+                            }}
                             className={`sidebar-subitem ${
                               isSubActive ? 'is-active' : ''
                             }`}

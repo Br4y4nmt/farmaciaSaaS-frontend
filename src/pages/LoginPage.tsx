@@ -10,23 +10,16 @@ export function LoginPage() {
 
   useEffect(() => {
     const user = getStoredUser()
-    if (user) {
+    if (user?.token) {
       navigate(getRoleRoute(user.rol_id), { replace: true })
     }
   }, [navigate])
 
- function handleLoginSuccess(nextUser: AuthUser) {
-  setStoredUser(nextUser)
+  function handleLoginSuccess(nextUser: AuthUser) {
+    setStoredUser(nextUser)
+    navigate(getRoleRoute(nextUser.rol_id), { replace: true })
+  }
 
-  localStorage.setItem('showBienvenida', 'true')
-
-  localStorage.setItem(
-    'nombre_usuario',
-    `${nextUser.nombres} ${nextUser.apellidos}`
-  )
-
-  navigate(getRoleRoute(nextUser.rol_id), { replace: true })
-}
   return (
     <div className="min-h-screen bg-white flex">
       <div className="hidden lg:block lg:w-[60%] relative">
@@ -43,7 +36,7 @@ export function LoginPage() {
           <img
             src="/images/logo.png"
             alt="Logo"
-            className="h-30 w-auto object-contain"
+            className="h-32 w-auto object-contain"
           />
         </div>
 

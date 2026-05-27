@@ -8,6 +8,8 @@ export interface AuthUser {
   rol_id: number
   empresa_id: number
   correo?: string
+  nombres?: string
+  apellidos?: string
   token: string
   [key: string]: unknown
 }

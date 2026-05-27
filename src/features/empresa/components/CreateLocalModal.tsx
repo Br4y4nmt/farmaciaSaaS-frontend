@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CloseIcon } from '../../../components/icons'
 import { InfoTooltip } from '../../../components/ui/InfoTooltip'
 import { useCreateLocal } from '../hooks/useCreateLocal'
@@ -6,6 +6,12 @@ import {
   showSuccessToast,
   showErrorToast,
 } from '../../../components/ui/toast'
+import {
+  ubigeoService,
+  type Departamento,
+  type Provincia,
+  type Distrito,
+} from '../api/ubigeoService'
 
 type CreateLocalModalProps = {
   isOpen: boolean
@@ -32,7 +38,39 @@ export function CreateLocalModal({
   onCreated,
 }: CreateLocalModalProps) {
   const { createLocal, isLoading } = useCreateLocal()
+
   const [form, setForm] = useState(initialForm)
+
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([])
+  const [provincias, setProvincias] = useState<Provincia[]>([])
+  const [distritos, setDistritos] = useState<Distrito[]>([])
+
+  const [loadingDepartamentos, setLoadingDepartamentos] = useState(false)
+  const [loadingProvincias, setLoadingProvincias] = useState(false)
+  const [loadingDistritos, setLoadingDistritos] = useState(false)
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    async function loadDepartamentos() {
+      try {
+        setLoadingDepartamentos(true)
+
+        const data = await ubigeoService.getDepartamentos()
+        setDepartamentos(data)
+      } catch (error) {
+        console.error(error)
+        showErrorToast(
+          'No se pudieron cargar los departamentos',
+          'Verifica que la API de ubigeo esté funcionando correctamente.',
+        )
+      } finally {
+        setLoadingDepartamentos(false)
+      }
+    }
+
+    loadDepartamentos()
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -50,15 +88,82 @@ export function CreateLocalModal({
     }))
   }
 
+  async function handleDepartamentoChange(
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) {
+    const departamento = event.target.value
+
+    setForm((prev) => ({
+      ...prev,
+      departamento,
+      provincia: '',
+      distrito: '',
+    }))
+
+    setProvincias([])
+    setDistritos([])
+
+    if (!departamento) return
+
+    try {
+      setLoadingProvincias(true)
+
+      const data = await ubigeoService.getProvincias(departamento)
+      setProvincias(data)
+    } catch (error) {
+      console.error(error)
+      showErrorToast(
+        'No se pudieron cargar las provincias',
+        'Inténtalo nuevamente.',
+      )
+    } finally {
+      setLoadingProvincias(false)
+    }
+  }
+
+  async function handleProvinciaChange(
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) {
+    const provincia = event.target.value
+
+    setForm((prev) => ({
+      ...prev,
+      provincia,
+      distrito: '',
+    }))
+
+    setDistritos([])
+
+    if (!form.departamento || !provincia) return
+
+    try {
+      setLoadingDistritos(true)
+
+      const data = await ubigeoService.getDistritos(form.departamento, provincia)
+      setDistritos(data)
+    } catch (error) {
+      console.error(error)
+      showErrorToast(
+        'No se pudieron cargar los distritos',
+        'Inténtalo nuevamente.',
+      )
+    } finally {
+      setLoadingDistritos(false)
+    }
+  }
+
   function handleClose() {
     setForm(initialForm)
+    setProvincias([])
+    setDistritos([])
     onClose()
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    // Validar que el teléfono tenga exactamente 9 dígitos numéricos
+
     const telefonoDigits = form.telefono.replace(/\D/g, '')
+
     if (telefonoDigits.length !== 9) {
       showErrorToast(
         'Teléfono inválido',
@@ -91,6 +196,8 @@ export function CreateLocalModal({
     }
 
     setForm(initialForm)
+    setProvincias([])
+    setDistritos([])
     onCreated?.()
     onClose()
 
@@ -142,51 +249,6 @@ export function CreateLocalModal({
 
             <div>
               <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                Departamento
-              </label>
-
-              <input
-                name="departamento"
-                value={form.departamento}
-                onChange={handleChange}
-                type="text"
-                required
-                className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                Provincia
-              </label>
-
-              <input
-                name="provincia"
-                value={form.provincia}
-                onChange={handleChange}
-                type="text"
-                required
-                className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                Distrito
-              </label>
-
-              <input
-                name="distrito"
-                value={form.distrito}
-                onChange={handleChange}
-                type="text"
-                required
-                className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                 Teléfono
               </label>
 
@@ -196,8 +258,86 @@ export function CreateLocalModal({
                 onChange={handleChange}
                 type="tel"
                 required
+                maxLength={9}
                 className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
               />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[13px] font-medium text-[#606266]">
+                Departamento
+              </label>
+
+              <select
+                name="departamento"
+                value={form.departamento}
+                onChange={handleDepartamentoChange}
+                required
+                disabled={loadingDepartamentos}
+                className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+              >
+                <option value="">
+                  {loadingDepartamentos
+                    ? 'Cargando...'
+                    : 'Seleccione departamento'}
+                </option>
+
+                {departamentos.map((departamento) => (
+                  <option key={departamento.id} value={departamento.nombre}>
+                    {departamento.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[13px] font-medium text-[#606266]">
+                Provincia
+              </label>
+
+              <select
+                name="provincia"
+                value={form.provincia}
+                onChange={handleProvinciaChange}
+                required
+                disabled={!form.departamento || loadingProvincias}
+                className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+              >
+                <option value="">
+                  {loadingProvincias ? 'Cargando...' : 'Seleccione provincia'}
+                </option>
+
+                {provincias.map((provincia) => (
+                  <option key={provincia.id} value={provincia.nombre}>
+                    {provincia.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[13px] font-medium text-[#606266]">
+                Distrito
+              </label>
+
+              <select
+                name="distrito"
+                value={form.distrito}
+                onChange={handleChange}
+                required
+                disabled={!form.provincia || loadingDistritos}
+                className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
+              >
+                <option value="">
+                  {loadingDistritos ? 'Cargando...' : 'Seleccione distrito'}
+                </option>
+
+                {distritos.map((distrito) => (
+                  <option key={distrito.ubigeo} value={distrito.nombre}>
+                    {distrito.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="md:col-span-3">

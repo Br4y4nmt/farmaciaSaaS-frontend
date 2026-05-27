@@ -1,9 +1,22 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react'
 import { CloseIcon } from '../../../components/icons'
 import { InfoTooltip } from '../../../components/ui/InfoTooltip'
+import { showSuccessToast } from '../../../components/ui/toast'
 import { useStoredUser } from '../../auth/hooks/useStoredUser'
 import { useUpdateProveedor } from '../hooks/useUpdateProveedor'
 import type { Proveedor } from '../types/proveedor.types'
+import {
+  ubigeoService,
+  type Departamento,
+  type Provincia,
+  type Distrito,
+} from '../../empresa/api/ubigeoService'
 
 type Props = {
   isOpen: boolean
@@ -58,15 +71,74 @@ const initialForm: FormData = {
   estado: true,
 }
 
+function buildFormFromProveedor(proveedor: Proveedor): FormData {
+  return {
+    tipo_documento: proveedor.tipo_documento || 'RUC',
+    numero_documento: proveedor.numero_documento || '',
+    razon_social: proveedor.razon_social || '',
+    nombre_comercial: proveedor.nombre_comercial || '',
+
+    direccion: proveedor.direccion || '',
+    departamento: proveedor.departamento || '',
+    provincia: proveedor.provincia || '',
+    distrito: proveedor.distrito || '',
+
+    telefono: proveedor.telefono || '',
+    celular: proveedor.celular || '',
+    correo: proveedor.correo || '',
+    contacto_nombre: proveedor.contacto_nombre || '',
+    contacto_telefono: proveedor.contacto_telefono || '',
+    contacto_correo: proveedor.contacto_correo || '',
+
+    observacion: proveedor.observacion || '',
+    estado: proveedor.estado,
+  }
+}
+
+function normalizeForm(form: FormData): FormData {
+  return {
+    ...form,
+    tipo_documento: form.tipo_documento.trim(),
+    numero_documento: form.numero_documento.trim(),
+    razon_social: form.razon_social.trim(),
+    nombre_comercial: form.nombre_comercial.trim(),
+
+    direccion: form.direccion.trim(),
+    departamento: form.departamento.trim(),
+    provincia: form.provincia.trim(),
+    distrito: form.distrito.trim(),
+
+    telefono: form.telefono.trim(),
+    celular: form.celular.trim(),
+    correo: form.correo.trim(),
+    contacto_nombre: form.contacto_nombre.trim(),
+    contacto_telefono: form.contacto_telefono.trim(),
+    contacto_correo: form.contacto_correo.trim(),
+
+    observacion: form.observacion.trim(),
+  }
+}
+
 export default function EditProveedorModal({
   isOpen,
   proveedor,
   onClose,
   onSuccess,
 }: Props) {
+  const formRef = useRef<HTMLFormElement | null>(null)
+
   const [form, setForm] = useState<FormData>(initialForm)
+  const [originalForm, setOriginalForm] = useState<FormData>(initialForm)
   const [activeSection, setActiveSection] = useState<ActiveSection>('general')
   const [error, setError] = useState<string | null>(null)
+
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([])
+  const [provincias, setProvincias] = useState<Provincia[]>([])
+  const [distritos, setDistritos] = useState<Distrito[]>([])
+
+  const [loadingDepartamentos, setLoadingDepartamentos] = useState(false)
+  const [loadingProvincias, setLoadingProvincias] = useState(false)
+  const [loadingDistritos, setLoadingDistritos] = useState(false)
 
   const user = useStoredUser()
 
@@ -78,36 +150,66 @@ export default function EditProveedorModal({
   } = useUpdateProveedor()
 
   useEffect(() => {
-    if (!proveedor) return
+    if (!isOpen || !proveedor) return
 
-    setForm({
-      tipo_documento: proveedor.tipo_documento || 'RUC',
-      numero_documento: proveedor.numero_documento || '',
-      razon_social: proveedor.razon_social || '',
-      nombre_comercial: proveedor.nombre_comercial || '',
+    const loadedForm = buildFormFromProveedor(proveedor)
 
-      direccion: proveedor.direccion || '',
-      departamento: proveedor.departamento || '',
-      provincia: proveedor.provincia || '',
-      distrito: proveedor.distrito || '',
-
-      telefono: proveedor.telefono || '',
-      celular: proveedor.celular || '',
-      correo: proveedor.correo || '',
-      contacto_nombre: proveedor.contacto_nombre || '',
-      contacto_telefono: proveedor.contacto_telefono || '',
-      contacto_correo: proveedor.contacto_correo || '',
-
-      observacion: proveedor.observacion || '',
-      estado: proveedor.estado,
-    })
+    setForm(loadedForm)
+    setOriginalForm(loadedForm)
 
     setActiveSection('general')
     setError(null)
     setUpdateError(null)
-  }, [proveedor, setUpdateError])
+
+    async function loadUbigeoData() {
+      try {
+        setLoadingDepartamentos(true)
+
+        const departamentosData = await ubigeoService.getDepartamentos()
+        setDepartamentos(departamentosData)
+
+        if (loadedForm.departamento) {
+          setLoadingProvincias(true)
+
+          const provinciasData = await ubigeoService.getProvincias(
+            loadedForm.departamento,
+          )
+
+          setProvincias(provinciasData)
+
+          if (loadedForm.provincia) {
+            setLoadingDistritos(true)
+
+            const distritosData = await ubigeoService.getDistritos(
+              loadedForm.departamento,
+              loadedForm.provincia,
+            )
+
+            setDistritos(distritosData)
+          } else {
+            setDistritos([])
+          }
+        } else {
+          setProvincias([])
+          setDistritos([])
+        }
+      } catch (error) {
+        console.error(error)
+        setError('No se pudieron cargar los datos de ubicación.')
+      } finally {
+        setLoadingDepartamentos(false)
+        setLoadingProvincias(false)
+        setLoadingDistritos(false)
+      }
+    }
+
+    loadUbigeoData()
+  }, [isOpen, proveedor, setUpdateError])
 
   if (!isOpen || !proveedor) return null
+
+  const hasChanges =
+    JSON.stringify(normalizeForm(form)) !== JSON.stringify(normalizeForm(originalForm))
 
   function handleChange(
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -126,9 +228,79 @@ export default function EditProveedorModal({
     if (updateError) setUpdateError(null)
   }
 
+  async function handleDepartamentoChange(e: ChangeEvent<HTMLSelectElement>) {
+    const departamento = e.target.value
+
+    setForm((prev) => ({
+      ...prev,
+      departamento,
+      provincia: '',
+      distrito: '',
+    }))
+
+    setProvincias([])
+    setDistritos([])
+
+    if (error) setError(null)
+    if (updateError) setUpdateError(null)
+
+    if (!departamento) return
+
+    try {
+      setLoadingProvincias(true)
+
+      const data = await ubigeoService.getProvincias(departamento)
+      setProvincias(data)
+    } catch (error) {
+      console.error(error)
+      setError('No se pudieron cargar las provincias.')
+    } finally {
+      setLoadingProvincias(false)
+    }
+  }
+
+  async function handleProvinciaChange(e: ChangeEvent<HTMLSelectElement>) {
+    const provincia = e.target.value
+
+    setForm((prev) => ({
+      ...prev,
+      provincia,
+      distrito: '',
+    }))
+
+    setDistritos([])
+
+    if (error) setError(null)
+    if (updateError) setUpdateError(null)
+
+    if (!form.departamento || !provincia) return
+
+    try {
+      setLoadingDistritos(true)
+
+      const data = await ubigeoService.getDistritos(form.departamento, provincia)
+      setDistritos(data)
+    } catch (error) {
+      console.error(error)
+      setError('No se pudieron cargar los distritos.')
+    } finally {
+      setLoadingDistritos(false)
+    }
+  }
+
   function handleSectionChange(section: ActiveSection) {
     setError(null)
     setActiveSection(section)
+  }
+
+  function showHtml5ValidationInSection(section: ActiveSection) {
+    setError(null)
+    setUpdateError(null)
+    setActiveSection(section)
+
+    setTimeout(() => {
+      formRef.current?.reportValidity()
+    }, 0)
   }
 
   function validateForm(): {
@@ -139,20 +311,6 @@ export default function EditProveedorModal({
       return {
         section: 'general',
         message: 'No se encontró la empresa del usuario autenticado.',
-      }
-    }
-
-    if (!form.tipo_documento.trim()) {
-      return {
-        section: 'general',
-        message: 'Selecciona el tipo de documento.',
-      }
-    }
-
-    if (!form.numero_documento.trim()) {
-      return {
-        section: 'general',
-        message: 'Completa el campo: Número de documento.',
       }
     }
 
@@ -173,13 +331,6 @@ export default function EditProveedorModal({
       return {
         section: 'general',
         message: 'El DNI debe contener 8 dígitos.',
-      }
-    }
-
-    if (!form.razon_social.trim()) {
-      return {
-        section: 'general',
-        message: 'Completa el campo: Razón social.',
       }
     }
 
@@ -206,61 +357,88 @@ export default function EditProveedorModal({
     return null
   }
 
-async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-  e.preventDefault()
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
 
-  const validationError = validateForm()
+    if (!hasChanges) {
+      return
+    }
 
-  if (validationError) {
-    setActiveSection(validationError.section)
-    setError(validationError.message)
-    return
+    if (!form.numero_documento.trim()) {
+      showHtml5ValidationInSection('general')
+      return
+    }
+
+    if (
+      !form.direccion.trim() ||
+      !form.departamento.trim() ||
+      !form.provincia.trim() ||
+      !form.distrito.trim()
+    ) {
+      showHtml5ValidationInSection('ubicacion')
+      return
+    }
+
+    const validationError = validateForm()
+
+    if (validationError) {
+      setActiveSection(validationError.section)
+      setError(validationError.message)
+      return
+    }
+
+    const payload = {
+      empresa_id: Number(user?.empresa_id),
+      tipo_documento: form.tipo_documento,
+      numero_documento: form.numero_documento.trim(),
+      razon_social: form.razon_social.trim(),
+      nombre_comercial: form.nombre_comercial.trim(),
+
+      direccion: form.direccion.trim(),
+      departamento: form.departamento.trim(),
+      provincia: form.provincia.trim(),
+      distrito: form.distrito.trim(),
+
+      telefono: form.telefono.trim(),
+      celular: form.celular.trim(),
+      correo: form.correo.trim(),
+
+      contacto_nombre: form.contacto_nombre.trim(),
+      contacto_telefono: form.contacto_telefono.trim(),
+      contacto_correo: form.contacto_correo.trim(),
+
+      observacion: form.observacion.trim(),
+      estado: form.estado,
+    }
+
+    if (!proveedor) return
+
+    const proveedorActualizado = await actualizarProveedor(proveedor.id, payload)
+
+    if (!proveedorActualizado) return
+
+    showSuccessToast(
+      'Proveedor actualizado',
+      'Los cambios se guardaron correctamente.',
+    )
+
+    setForm(initialForm)
+    setOriginalForm(initialForm)
+    setActiveSection('general')
+    setProvincias([])
+    setDistritos([])
+    onClose()
+    onSuccess?.()
   }
-
-  if (!proveedor) {
-    setError('No se encontró el proveedor seleccionado.')
-    return
-  }
-
-  const payload = {
-    empresa_id: Number(user?.empresa_id),
-    tipo_documento: form.tipo_documento,
-    numero_documento: form.numero_documento.trim(),
-    razon_social: form.razon_social.trim(),
-    nombre_comercial: form.nombre_comercial.trim(),
-
-    direccion: form.direccion.trim(),
-    departamento: form.departamento.trim(),
-    provincia: form.provincia.trim(),
-    distrito: form.distrito.trim(),
-
-    telefono: form.telefono.trim(),
-    celular: form.celular.trim(),
-    correo: form.correo.trim(),
-
-    contacto_nombre: form.contacto_nombre.trim(),
-    contacto_telefono: form.contacto_telefono.trim(),
-    contacto_correo: form.contacto_correo.trim(),
-
-    observacion: form.observacion.trim(),
-    estado: form.estado,
-  }
-
-  const proveedorActualizado = await actualizarProveedor(proveedor.id, payload)
-
-  if (!proveedorActualizado) return
-
-  setForm(initialForm)
-  setActiveSection('general')
-  onClose()
-  onSuccess?.()
-}
 
   function handleClose() {
     setForm(initialForm)
+    setOriginalForm(initialForm)
     setActiveSection('general')
     setError(null)
     setUpdateError(null)
+    setProvincias([])
+    setDistritos([])
     onClose()
   }
 
@@ -283,7 +461,11 @@ async function handleSubmit(e: FormEvent<HTMLFormElement>) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
+        <form
+          ref={formRef}
+          onSubmit={handleSubmit}
+          className="space-y-5 px-6 py-5"
+        >
           <div className="border-b border-slate-200">
             <div className="flex gap-6 overflow-x-auto">
               <TabButton
@@ -319,6 +501,7 @@ async function handleSubmit(e: FormEvent<HTMLFormElement>) {
                 name="tipo_documento"
                 value={form.tipo_documento}
                 onChange={handleChange}
+                required
                 options={[
                   ['RUC', 'RUC'],
                   ['DNI', 'DNI'],
@@ -343,8 +526,7 @@ async function handleSubmit(e: FormEvent<HTMLFormElement>) {
                   name="razon_social"
                   value={form.razon_social}
                   onChange={handleChange}
-                  required
-                  info="Nombre legal del proveedor registrado en SUNAT o documento equivalente."
+                  info="Opcional. Nombre legal del proveedor registrado en SUNAT o documento equivalente."
                 />
               </div>
 
@@ -354,7 +536,7 @@ async function handleSubmit(e: FormEvent<HTMLFormElement>) {
                   name="nombre_comercial"
                   value={form.nombre_comercial}
                   onChange={handleChange}
-                  info="Nombre con el que normalmente se identifica al proveedor. Puede ser igual a la razón social."
+                  info="Opcional. Nombre con el que normalmente se identifica al proveedor."
                 />
               </div>
             </div>
@@ -368,29 +550,72 @@ async function handleSubmit(e: FormEvent<HTMLFormElement>) {
                   name="direccion"
                   value={form.direccion}
                   onChange={handleChange}
+                  required
                   info="Dirección fiscal o comercial del proveedor."
                 />
               </div>
 
-              <Input
+              <Select
                 label="Departamento"
                 name="departamento"
                 value={form.departamento}
-                onChange={handleChange}
+                onChange={handleDepartamentoChange}
+                disabled={loadingDepartamentos}
+                required
+                options={[
+                  [
+                    '',
+                    loadingDepartamentos
+                      ? 'Cargando departamentos...'
+                      : 'Seleccione departamento',
+                  ],
+                  ...departamentos.map((departamento) => [
+                    departamento.nombre,
+                    departamento.nombre,
+                  ] as [string, string]),
+                ]}
               />
 
-              <Input
+              <Select
                 label="Provincia"
                 name="provincia"
                 value={form.provincia}
-                onChange={handleChange}
+                onChange={handleProvinciaChange}
+                disabled={!form.departamento || loadingProvincias}
+                required
+                options={[
+                  [
+                    '',
+                    loadingProvincias
+                      ? 'Cargando provincias...'
+                      : 'Seleccione provincia',
+                  ],
+                  ...provincias.map((provincia) => [
+                    provincia.nombre,
+                    provincia.nombre,
+                  ] as [string, string]),
+                ]}
               />
 
-              <Input
+              <Select
                 label="Distrito"
                 name="distrito"
                 value={form.distrito}
                 onChange={handleChange}
+                disabled={!form.provincia || loadingDistritos}
+                required
+                options={[
+                  [
+                    '',
+                    loadingDistritos
+                      ? 'Cargando distritos...'
+                      : 'Seleccione distrito',
+                  ],
+                  ...distritos.map((distrito) => [
+                    distrito.nombre,
+                    distrito.nombre,
+                  ] as [string, string]),
+                ]}
               />
             </div>
           )}
@@ -417,7 +642,7 @@ async function handleSubmit(e: FormEvent<HTMLFormElement>) {
                   name="correo"
                   value={form.correo}
                   onChange={handleChange}
-                  info="Correo general del proveedor para comprobantes, pedidos o coordinación."
+                  info="Opcional. Correo general del proveedor para comprobantes, pedidos o coordinación."
                 />
               </div>
 
@@ -426,7 +651,7 @@ async function handleSubmit(e: FormEvent<HTMLFormElement>) {
                 name="contacto_nombre"
                 value={form.contacto_nombre}
                 onChange={handleChange}
-                info="Persona encargada de ventas, distribución o atención."
+                info="Opcional. Persona encargada de ventas, distribución o atención."
               />
 
               <Input
@@ -489,10 +714,10 @@ async function handleSubmit(e: FormEvent<HTMLFormElement>) {
 
             <button
               type="submit"
-              disabled={isUpdatingProveedor}
+              disabled={isUpdatingProveedor || !hasChanges}
               className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isUpdatingProveedor ? 'Guardando...' : 'Guardar cambios'}
+              {isUpdatingProveedor ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         </form>
@@ -568,6 +793,7 @@ function Select({
   onChange,
   options,
   disabled = false,
+  required = false,
 }: {
   label: string
   name: string
@@ -575,6 +801,7 @@ function Select({
   onChange: (e: ChangeEvent<HTMLSelectElement>) => void
   options: [string, string][]
   disabled?: boolean
+  required?: boolean
 }) {
   return (
     <div className="flex flex-col gap-1">
@@ -587,10 +814,11 @@ function Select({
         value={value}
         onChange={onChange}
         disabled={disabled}
+        required={required}
         className="cursor-pointer rounded border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:bg-slate-100"
       >
         {options.map(([value, label]) => (
-          <option key={value} value={value}>
+          <option key={`${name}-${value}`} value={value}>
             {label}
           </option>
         ))}
