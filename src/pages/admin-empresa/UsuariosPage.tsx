@@ -1,87 +1,31 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
 import { AdminEmpresaHeader } from '../../components/layout/headers/AdminEmpresaHeader'
 import { AdminEmpresaSidebar } from '../../components/layout/siderbars/AdminEmpresaSidebar'
 import { DataTable } from '../../components/ui/DataTable'
 import type { DataTableColumn } from '../../components/ui/DataTable'
 import { PageHeader } from '../../components/ui/PageHeader'
-
+import { useUsuarios } from '../../features/usuarios/hooks/useUsuarios'
+import type { Usuario } from '../../features/usuarios/types/usuario.types'
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
-
 import { SecurityIcon } from '../../components/icons'
+import CreateUsuarioModal from '../../features/usuarios/components/CreateUsuarioModal'
+import { useDeleteUsuario } from '../../features/usuarios/hooks/useDeleteUsuario'
+import EditUsuarioModal from '../../features/usuarios/components/EditUsuarioModal'
+import { showQuestionAlert, showErrorAlert } from '../../components/ui/alerts'
+import { showSuccessToast } from '../../components/ui/toast'
 
-const usuarios = [
-  {
-    numero: 1,
-    id: 1,
-    nombres: 'Juan Carlos',
-    apellidos: 'Pérez Ramos',
-    correo: 'juan.perez@gmail.com',
-    telefono: '987654321',
-    rol: 'Farmacéutico',
-    sucursal: 'Sucursal Central',
-    codigoSucursal: 'SUC001',
-    estado: true,
-  },
-  {
-    numero: 2,
-    id: 2,
-    nombres: 'María Fernanda',
-    apellidos: 'López Torres',
-    correo: 'maria.lopez@gmail.com',
-    telefono: '912345678',
-    rol: 'Cajero',
-    sucursal: 'Sucursal Norte',
-    codigoSucursal: 'SUC002',
-    estado: true,
-  },
-  {
-    numero: 3,
-    id: 3,
-    nombres: 'Carlos Alberto',
-    apellidos: 'Ramírez Díaz',
-    correo: 'carlos.ramirez@gmail.com',
-    telefono: '956789123',
-    rol: 'Inventario',
-    sucursal: 'Almacén Principal',
-    codigoSucursal: 'ALM001',
-    estado: false,
-  },
-  {
-    numero: 4,
-    id: 4,
-    nombres: 'Ana Lucía',
-    apellidos: 'Gómez Rojas',
-    correo: 'ana.gomez@gmail.com',
-    telefono: '999888777',
-    rol: 'Gerente',
-    sucursal: 'Sucursal Central',
-    codigoSucursal: 'SUC001',
-    estado: true,
-  },
-  {
-    numero: 5,
-    id: 5,
-    nombres: 'Luis Miguel',
-    apellidos: 'Sánchez Vega',
-    correo: 'luis.sanchez@gmail.com',
-    telefono: '944555666',
-    rol: 'Contador',
-    sucursal: 'Oficina Administrativa',
-    codigoSucursal: 'ADM001',
-    estado: true,
-  },
-]
-
-type UsuarioMock = (typeof usuarios)[number]
 
 export function UsuariosPage() {
   const user = useStoredUser()
   const navigate = useNavigate()
-
   const [collapsed, setCollapsed] = useState(false)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null)
+  const { usuarios, isLoading, error, refetch } = useUsuarios()
+  const { deleteUsuario } = useDeleteUsuario()
 
   function handleLogout() {
     clearStoredUser()
@@ -89,24 +33,45 @@ export function UsuariosPage() {
   }
 
   function handleNew() {
-    console.log('Abrir modal crear usuario')
+    setIsCreateOpen(true)
   }
 
-  function handleEdit(usuario: UsuarioMock) {
-    console.log('Editar usuario:', usuario)
+  function handleEdit(usuario: Usuario) {
+    setSelectedUsuario(usuario)
+    setIsEditOpen(true)
   }
 
-  function handleDelete(usuario: UsuarioMock) {
-    console.log('Eliminar usuario:', usuario)
+  async function handleDelete(usuario: Usuario) {
+    const nombreCompleto = `${usuario.nombres || ''} ${usuario.apellidos || ''}`.trim()
+
+    const confirmed = await showQuestionAlert({
+      title: 'Eliminar usuario',
+      text: `¿Seguro que deseas eliminar el usuario "${nombreCompleto || usuario.correo}"?`,
+    })
+
+    if (!confirmed) return
+
+    const response = await deleteUsuario(usuario.id)
+
+    if (!response) {
+      await showErrorAlert({
+        title: 'Error',
+        text: 'No se pudo eliminar el usuario.',
+      })
+      return
+    }
+
+    refetch()
+    showSuccessToast('Usuario eliminado', 'El usuario ha sido eliminado correctamente.')
   }
 
-  const columns: DataTableColumn<UsuarioMock>[] = [
+  const columns: DataTableColumn<Usuario>[] = [
     {
       key: 'numero',
       header: 'N°',
       render: (usuario) => (
         <span className="text-sm font-medium text-slate-600">
-          {usuario.numero}
+          {usuarios.findIndex((item) => item.id === usuario.id) + 1}
         </span>
       ),
     },
@@ -138,7 +103,7 @@ export function UsuariosPage() {
       header: 'Rol',
       render: (usuario) => (
         <span className="rounded bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700">
-          {usuario.rol}
+          {usuario.rol?.nombre || 'Sin rol'}
         </span>
       ),
     },
@@ -148,11 +113,11 @@ export function UsuariosPage() {
       render: (usuario) => (
         <div>
           <p className="text-sm font-medium text-slate-700">
-            {usuario.sucursal}
-          </p>
-          <p className="text-xs text-slate-500">
-            {usuario.codigoSucursal}
-          </p>
+          {usuario.sucursal?.nombre || 'Sin sucursal'}
+        </p>
+        <p className="text-xs text-slate-500">
+          {usuario.sucursal?.codigo || '-'}
+        </p>
         </div>
       ),
     },
@@ -171,19 +136,23 @@ export function UsuariosPage() {
         </span>
       ),
     },
-    {
-      key: 'acciones',
-      header: 'Acciones',
-      render: (usuario) => (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => handleEdit(usuario)}
-            className="cursor-pointer rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
-          >
-            Editar
-          </button>
+{
+  key: 'acciones',
+  header: 'Acciones',
+  render: (usuario) => {
+    const isAdminEmpresa = usuario.rol?.codigo === 'ADMIN_EMPRESA'
 
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => handleEdit(usuario)}
+          className="cursor-pointer rounded bg-cyan-600 px-3 py-1 text-xs text-white transition hover:bg-cyan-700"
+        >
+          Editar
+        </button>
+
+        {!isAdminEmpresa && (
           <button
             type="button"
             onClick={() => handleDelete(usuario)}
@@ -191,9 +160,11 @@ export function UsuariosPage() {
           >
             Eliminar
           </button>
-        </div>
-      ),
-    },
+        )}
+      </div>
+    )
+  },
+},
   ]
 
   return (
@@ -215,16 +186,31 @@ export function UsuariosPage() {
           icon={<SecurityIcon />}
         />
 
+        <CreateUsuarioModal
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onCreated={refetch}
+        />
+        <EditUsuarioModal
+          isOpen={isEditOpen}
+          usuario={selectedUsuario}
+          onClose={() => {
+            setIsEditOpen(false)
+            setSelectedUsuario(null)
+          }}
+          onUpdated={refetch}
+        />
+
         <main className="px-8 py-5">
-          <DataTable
-            title="Listado de usuarios"
-            columns={columns}
-            data={usuarios}
-            isLoading={false}
-            error={null}
-            loadingMessage="Cargando usuarios..."
-            emptyMessage="No existen usuarios registrados"
-          />
+        <DataTable
+          title="Listado de usuarios"
+          columns={columns}
+          data={usuarios}
+          isLoading={isLoading}
+          error={error}
+          loadingMessage="Cargando usuarios..."
+          emptyMessage="No existen usuarios registrados"
+        />
         </main>
       </div>
     </div>
