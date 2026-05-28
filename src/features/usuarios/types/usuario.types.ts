@@ -48,3 +48,20 @@ export type UsuariosResponse = {
   ok: boolean
   data: Usuario[]
 }
+
+export type UpdateUsuarioPayload = {
+  nombres: string
+  apellidos: string
+  correo: string
+  telefono?: string | null
+  rol_id: number
+  sucursal_id: number
+  estado: boolean
+  password?: string
+}
+
+export type UpdateUsuarioResponse = {
+  ok: boolean
+  message: string
+  data: Usuario
+}

@@ -1,22 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
 import { AdminEmpresaHeader } from '../../components/layout/headers/AdminEmpresaHeader'
 import { AdminEmpresaSidebar } from '../../components/layout/siderbars/AdminEmpresaSidebar'
 import { DataTable } from '../../components/ui/DataTable'
 import type { DataTableColumn } from '../../components/ui/DataTable'
 import { PageHeader } from '../../components/ui/PageHeader'
-
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
-
 import { CreateLocalModal } from '../../features/empresa/components/CreateLocalModal'
 import { EditLocalModal } from '../../features/empresa/components/EditLocalModal'
 import { useLocales } from '../../features/empresa/hooks/useLocales'
 import { useDeleteSucursal } from '../../features/empresa/hooks/useDeleteSucursal'
 import type { Sucursal } from '../../features/empresa/types/empresa.types'
-
-import { InventoryIcon } from '../../components/icons'
+import { UsersIcon } from '../../components/icons'
 import { showSuccessToast } from '../../components/ui/toast'
 import { showQuestionAlert, showErrorAlert } from '../../components/ui/alerts'
 
@@ -145,7 +141,7 @@ export function LocalesPage() {
           title="Locales / Sucursales"
           buttonText="Nuevo"
           onButtonClick={handleNew}
-          icon={<InventoryIcon />}
+          icon={<UsersIcon />}
         />
 
         <main className="px-8 py-5">

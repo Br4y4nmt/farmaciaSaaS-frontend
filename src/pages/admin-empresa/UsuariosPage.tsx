@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AdminEmpresaHeader } from '../../components/layout/headers/AdminEmpresaHeader'
 import { AdminEmpresaSidebar } from '../../components/layout/siderbars/AdminEmpresaSidebar'
@@ -9,7 +9,7 @@ import { useUsuarios } from '../../features/usuarios/hooks/useUsuarios'
 import type { Usuario } from '../../features/usuarios/types/usuario.types'
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
-import { SecurityIcon } from '../../components/icons'
+import { UsersIcon } from '../../components/icons'
 import CreateUsuarioModal from '../../features/usuarios/components/CreateUsuarioModal'
 import { useDeleteUsuario } from '../../features/usuarios/hooks/useDeleteUsuario'
 import EditUsuarioModal from '../../features/usuarios/components/EditUsuarioModal'
@@ -25,6 +25,15 @@ export function UsuariosPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null)
   const { usuarios, isLoading, error, refetch } = useUsuarios()
+  const sortedUsuarios = useMemo(() => {
+    if (!usuarios) return usuarios
+
+    const adminIds = new Set(usuarios.filter((u) => u.rol?.codigo === 'ADMIN_EMPRESA').map((u) => u.id))
+    const adminsFirst = usuarios.filter((u) => adminIds.has(u.id))
+    const others = usuarios.filter((u) => !adminIds.has(u.id))
+
+    return [...adminsFirst, ...others]
+  }, [usuarios])
   const { deleteUsuario } = useDeleteUsuario()
 
   function handleLogout() {
@@ -71,7 +80,7 @@ export function UsuariosPage() {
       header: 'N°',
       render: (usuario) => (
         <span className="text-sm font-medium text-slate-600">
-          {usuarios.findIndex((item) => item.id === usuario.id) + 1}
+          {sortedUsuarios.findIndex((item) => item.id === usuario.id) + 1}
         </span>
       ),
     },
@@ -183,7 +192,7 @@ export function UsuariosPage() {
           title="Usuarios"
           buttonText="Nuevo"
           onButtonClick={handleNew}
-          icon={<SecurityIcon />}
+          icon={<UsersIcon />}
         />
 
         <CreateUsuarioModal
@@ -205,7 +214,7 @@ export function UsuariosPage() {
         <DataTable
           title="Listado de usuarios"
           columns={columns}
-          data={usuarios}
+          data={sortedUsuarios}
           isLoading={isLoading}
           error={error}
           loadingMessage="Cargando usuarios..."

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { CloseIcon } from '../../../components/icons'
+import { InfoTooltip } from '../../../components/ui/InfoTooltip'
+import TextField from '../../../components/form/TextField'
+import PhoneField from '../../../components/form/PhoneField'
 import { useRolesAdminEmpresa } from '../hooks/useRolesAdminEmpresa'
 import { usePermisosByRol } from '../hooks/usePermisosByRol'
 import { useLocales } from '../../empresa/hooks/useLocales'
@@ -74,12 +77,7 @@ export function CreateUsuarioModal({
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
     const { name, value, type } = event.target
-    let newValue: any = value
-
-    if (name === 'telefono') {
-      // permitir solo números y máximo 9 dígitos
-      newValue = String(value).replace(/\D/g, '').slice(0, 9)
-    }
+    const newValue: any = value
 
     setForm((prev) => ({
       ...prev,
@@ -174,7 +172,7 @@ export function CreateUsuarioModal({
           <button
             type="button"
             onClick={handleClose}
-            className="text-slate-400 transition-colors hover:text-slate-600"
+            className="cursor-pointer text-slate-400 transition-colors hover:text-slate-600"
           >
             <CloseIcon />
           </button>
@@ -186,7 +184,7 @@ export function CreateUsuarioModal({
               <button
                 type="button"
                 onClick={() => handleSectionChange('usuario')}
-                className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+                className={`cursor-pointer border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
                   activeTab === 'usuario'
                     ? 'border-sky-500 text-sky-600'
                     : 'border-transparent text-slate-600 hover:text-slate-900'
@@ -198,7 +196,7 @@ export function CreateUsuarioModal({
               <button
                 type="button"
                 onClick={() => handleSectionChange('asignacion')}
-                className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+                className={`cursor-pointer border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
                   activeTab === 'asignacion'
                     ? 'border-sky-500 text-sky-600'
                     : 'border-transparent text-slate-600 hover:text-slate-900'
@@ -210,7 +208,7 @@ export function CreateUsuarioModal({
               <button
                 type="button"
                 onClick={() => handleSectionChange('permisos')}
-                className={`border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
+                className={`cursor-pointer border-b-2 px-1 pb-3 text-sm font-medium transition-colors ${
                   activeTab === 'permisos'
                     ? 'border-sky-500 text-sky-600'
                     : 'border-transparent text-slate-600 hover:text-slate-900'
@@ -231,13 +229,14 @@ export function CreateUsuarioModal({
                 <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                      Nombres
+                      Nombres <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <TextField
                       name="nombres"
                       value={form.nombres}
                       onChange={handleChange}
                       type="text"
+                      sanitize="letters-only"
                       required
                       disabled={creatingUsuario}
                       className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
@@ -246,13 +245,14 @@ export function CreateUsuarioModal({
 
                   <div>
                     <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                      Apellidos
+                      Apellidos <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <TextField
                       name="apellidos"
                       value={form.apellidos}
                       onChange={handleChange}
                       type="text"
+                      sanitize="letters-only"
                       required
                       disabled={creatingUsuario}
                       className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
@@ -293,16 +293,12 @@ export function CreateUsuarioModal({
                     <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                       Teléfono
                     </label>
-                    <input
+                    <PhoneField
                       name="telefono"
                       value={form.telefono}
                       onChange={handleChange}
-                      type="text"
                       required
                       disabled={creatingUsuario}
-                      inputMode="numeric"
-                      pattern="[0-9]{9}"
-                      maxLength={9}
                       title="Ingrese 9 dígitos (solo números)"
                       className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     />
@@ -319,8 +315,9 @@ export function CreateUsuarioModal({
 
                 <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                      Rol
+                    <label className="flex items-center gap-1.5 text-[13px] font-medium text-[#606266]">
+                      <span>Rol</span>
+                      <InfoTooltip text="Selecciona el tipo de usuario que desea crear para su sucursal." />
                     </label>
 
                     <select
@@ -454,7 +451,7 @@ export function CreateUsuarioModal({
                 type="button"
                 onClick={handleClose}
                 disabled={creatingUsuario}
-                className="rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer rounded border border-slate-300 px-3.5 py-1.5 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                 Cancelar
                 </button>
@@ -462,7 +459,7 @@ export function CreateUsuarioModal({
                 <button
                 type="submit"
                 disabled={loadingRoles || isLoadingLocales || creatingUsuario}
-                className="rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                 {creatingUsuario ? 'Guardando...' : 'Guardar'}
                 </button>

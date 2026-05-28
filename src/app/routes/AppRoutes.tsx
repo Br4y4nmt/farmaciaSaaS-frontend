@@ -21,6 +21,7 @@ import ProveedoresPage from '../../pages/admin-empresa/ProveedoresPage'
 import { CajeroPage } from '../../pages/cajero/CajeroPage'
 import { ContadorPage } from '../../pages/contador/ContadorPage'
 import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
+import  VentaRapidaUsuarioPage  from '../../pages/farmaceutico/VentaRapidaUsuarioPage'
 import { GerentePage } from '../../pages/gerente/GerentePage'
 import { InventarioPage } from '../../pages/inventario/InventarioPage'
 import UsuariosPage from '../../pages/admin-empresa/UsuariosPage'
@@ -180,6 +181,13 @@ export function AppRoutes() {
           path={ROLE_PATHS.FARMACEUTICO}
           element={<FarmaceuticoPage />}
         />
+
+        <Route
+          path="/farmaceutico/pos/venta-rapida"
+          element={<VentaRapidaUsuarioPage />}
+        />
+
+
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={[7]} />}>

@@ -2,6 +2,8 @@ import type {
   CreateUsuarioPayload,
   CreateUsuarioResponse,
   UsuariosResponse,
+  UpdateUsuarioPayload,
+  UpdateUsuarioResponse,
 } from '../types/usuario.types'
 
 const API_URL = import.meta.env.VITE_API_URL
@@ -114,4 +116,27 @@ export const usuarioService = {
     return data
     },
 
+
+
+  async updateAdminEmpresa(
+    id: number,
+    payload: UpdateUsuarioPayload
+  ): Promise<UpdateUsuarioResponse> {
+    const response = await fetch(`${API_URL}/usuarios/admin-empresa/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(payload),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Error al actualizar usuario')
+    }
+
+    return data
+  },
 }

@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { CloseIcon } from '../../../components/icons'
+import TextField from '../../../components/form/TextField'
+import PhoneField from '../../../components/form/PhoneField'
 import { useRolesAdminEmpresa } from '../hooks/useRolesAdminEmpresa'
 import { usePermisosByRol } from '../hooks/usePermisosByRol'
 import { useLocales } from '../../empresa/hooks/useLocales'
 import type { Usuario } from '../types/usuario.types'
+import { useUpdateUsuario } from '../hooks/useUpdateUsuario'
+import { showSuccessToast } from '../../../components/ui/toast'
+
 
 type EditUsuarioModalProps = {
   isOpen: boolean
@@ -25,6 +30,39 @@ const initialForm = {
   estado: true,
 }
 
+function buildFormFromUsuario(usuario: Usuario) {
+  return {
+    nombres: usuario.nombres ?? '',
+    apellidos: usuario.apellidos ?? '',
+    correo: usuario.correo ?? '',
+    password: '',
+    telefono: usuario.telefono ?? '',
+    rol_id: usuario.rol_id ? String(usuario.rol_id) : '',
+    sucursal_id: usuario.sucursal_id ? String(usuario.sucursal_id) : '',
+    estado: Boolean(usuario.estado),
+  }
+}
+
+function normalizeForm(form: typeof initialForm) {
+  return {
+    nombres: form.nombres.trim(),
+    apellidos: form.apellidos.trim(),
+    correo: form.correo.trim().toLowerCase(),
+    password: form.password.trim(),
+    telefono: form.telefono.trim(),
+    rol_id: form.rol_id,
+    sucursal_id: form.sucursal_id,
+    estado: form.estado,
+  }
+}
+
+function areFormsEqual(a: typeof initialForm, b: typeof initialForm) {
+  const na = normalizeForm(a)
+  const nb = normalizeForm(b)
+
+  return JSON.stringify(na) === JSON.stringify(nb)
+}
+
 export function EditUsuarioModal({
   isOpen,
   usuario,
@@ -43,31 +81,36 @@ export function EditUsuarioModal({
   } = useRolesAdminEmpresa()
 
   const { locales: sucursales, isLoading: isLoadingLocales } = useLocales()
+  
+  const {
+  permisos,
+  isLoading: loadingPermisos,
+  error: permisosError,
+} = usePermisosByRol(form.rol_id)
 
   const {
-    permisos,
-    isLoading: loadingPermisos,
-    error: permisosError,
-  } = usePermisosByRol(form.rol_id)
+    updateUsuario,
+    isLoading: updatingUsuario,
+    error: updateError,
+  } = useUpdateUsuario()
 
   const selectedRol = roles.find((rol) => String(rol.id) === form.rol_id)
 
   useEffect(() => {
     if (!isOpen || !usuario) return
 
-    setForm({
-      nombres: usuario.nombres || '',
-      apellidos: usuario.apellidos || '',
-      correo: usuario.correo || '',
-      password: '',
-      telefono: usuario.telefono || '',
-      rol_id: usuario.rol_id ? String(usuario.rol_id) : '',
-      sucursal_id: usuario.sucursal_id ? String(usuario.sucursal_id) : '',
-      estado: Boolean(usuario.estado),
-    })
+    setForm(buildFormFromUsuario(usuario))
 
     setActiveTab('usuario')
   }, [isOpen, usuario])
+
+  const hasChanges = (() => {
+    if (!usuario) return false
+
+    const original = buildFormFromUsuario(usuario)
+
+    return !areFormsEqual(form, original)
+  })()
 
   useEffect(() => {
     if (!pendingReportValidity) return
@@ -86,13 +129,14 @@ export function EditUsuarioModal({
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
     const { name, value, type } = event.target
+    const newValue: any = value
 
     setForm((prev) => ({
       ...prev,
       [name]:
         type === 'checkbox'
           ? (event.target as HTMLInputElement).checked
-          : value,
+          : newValue,
     }))
   }
 
@@ -109,6 +153,8 @@ export function EditUsuarioModal({
   }
 
   function handleClose() {
+    if (updatingUsuario) return
+
     setForm(initialForm)
     setActiveTab('usuario')
     onClose()
@@ -118,7 +164,8 @@ export function EditUsuarioModal({
     if (
       !form.nombres.trim() ||
       !form.apellidos.trim() ||
-      !form.correo.trim()
+      !form.correo.trim() ||
+      String(form.telefono).trim().length !== 9
     ) {
       return 'usuario'
     }
@@ -130,10 +177,12 @@ export function EditUsuarioModal({
     return null
   }
 
-function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
   event.preventDefault()
 
   if (!usuario) return
+
+  if (!hasChanges) return
 
   const incomplete = getFirstIncompleteSection()
 
@@ -147,7 +196,7 @@ function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     nombres: form.nombres.trim(),
     apellidos: form.apellidos.trim(),
     correo: form.correo.trim().toLowerCase(),
-    telefono: form.telefono.trim(),
+    telefono: form.telefono.trim() || null,
     rol_id: Number(form.rol_id),
     sucursal_id: Number(form.sucursal_id),
     estado: form.estado,
@@ -158,7 +207,14 @@ function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
       : {}),
   }
 
-  console.log('Usuario a editar:', usuario.id, payload)
+  const response = await updateUsuario(usuario.id, payload)
+
+  if (!response) return
+
+  showSuccessToast(
+    'Usuario actualizado',
+    'Los datos del usuario fueron actualizados correctamente.'
+  )
 
   setForm(initialForm)
   setActiveTab('usuario')
@@ -236,13 +292,14 @@ function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
                 <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                      Nombres
+                      Nombres <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <TextField
                       name="nombres"
                       value={form.nombres}
                       onChange={handleChange}
                       type="text"
+                      sanitize="letters-only"
                       required
                       className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     />
@@ -250,13 +307,14 @@ function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 
                   <div>
                     <label className="mb-1 block text-[13px] font-medium text-[#606266]">
-                      Apellidos
+                      Apellidos <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <TextField
                       name="apellidos"
                       value={form.apellidos}
                       onChange={handleChange}
                       type="text"
+                      sanitize="letters-only"
                       required
                       className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     />
@@ -294,11 +352,12 @@ function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
                     <label className="mb-1 block text-[13px] font-medium text-[#606266]">
                       Teléfono
                     </label>
-                    <input
+                    <PhoneField
                       name="telefono"
                       value={form.telefono}
                       onChange={handleChange}
-                      type="text"
+                      required
+                      title="Ingrese 9 dígitos (solo números)"
                       className="h-9 w-full rounded border border-slate-300 px-3 text-sm outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     />
                   </div>
@@ -455,6 +514,11 @@ function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
               </div>
             )}
           </div>
+          {updateError && (
+            <p className="mb-4 rounded bg-red-50 px-4 py-2 text-sm text-red-600">
+              {updateError}
+            </p>
+          )}
 
           <div className="flex justify-end gap-3 border-slate-200 pt-5">
             <button
@@ -465,13 +529,13 @@ function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
               Cancelar
             </button>
 
-            <button
-              type="submit"
-              disabled={loadingRoles || isLoadingLocales}
-              className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Guardar
-            </button>
+        <button
+          type="submit"
+          disabled={loadingRoles || isLoadingLocales || !hasChanges || updatingUsuario}
+          className="cursor-pointer rounded bg-slate-900 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {updatingUsuario ? 'Guardando...' : 'Guardar'}
+        </button>
           </div>
         </form>
       </div>
