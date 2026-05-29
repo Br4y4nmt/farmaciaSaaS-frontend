@@ -11,13 +11,13 @@ import { clearStoredUser } from '../../features/auth/utils/authStorage'
 import { useCreateVentaRapida } from '../../features/ventas/hooks/useCreateVentaRapida'
 import { useProductosVentaRapida } from '../../features/producto/hooks/useProductosVentaRapida'
 import type { ProductoVenta } from '../../features/producto/types/productoVenta.types'
+import { useMetodosPago } from '../../features/metodosPago/hooks/useMetodosPago'
 
 type CarritoItem = {
   producto: ProductoVenta
   cantidad: number
 }
 
-type MetodoPago = 'EFECTIVO' | 'YAPE' | 'PLIN' | 'TARJETA' | 'TRANSFERENCIA'
 type VistaProductos = 'grid' | 'list'
 
 export default function VentaRapidaPage() {
@@ -29,8 +29,9 @@ export default function VentaRapidaPage() {
   const [search, setSearch] = useState('')
   const [vistaProductos, setVistaProductos] = useState<VistaProductos>('grid')
   const [carrito, setCarrito] = useState<CarritoItem[]>([])
-  const [metodoPago, setMetodoPago] = useState<MetodoPago>('EFECTIVO')
+  const [metodoPagoId, setMetodoPagoId] = useState('')
   const [montoRecibido, setMontoRecibido] = useState('')
+  const [referenciaPago, setReferenciaPago] = useState('')
 
   const {
     productos,
@@ -44,6 +45,19 @@ export default function VentaRapidaPage() {
     isLoading: creatingVenta,
     error: ventaError,
   } = useCreateVentaRapida()
+
+  const {
+  metodosPago,
+  isLoading: loadingMetodosPago,
+  error: metodosPagoError,
+} = useMetodosPago()
+
+  const selectedMetodoPago = metodosPago.find(
+    (metodo) => String(metodo.id) === metodoPagoId,
+  )
+
+  const esEfectivo = selectedMetodoPago?.tipo === 'EFECTIVO'
+  const requiereReferencia = Boolean(selectedMetodoPago?.requiere_referencia)
 
   function handleLogout() {
     clearStoredUser()
@@ -76,14 +90,15 @@ export default function VentaRapidaPage() {
   const igv = subtotal * 0.18
   const total = subtotal
 
-  const montoPagado =
-    metodoPago === 'EFECTIVO' ? Number(montoRecibido || 0) : total
+  const montoPagado = esEfectivo ? Number(montoRecibido || 0) : total
 
-  const vuelto = Math.max(montoPagado - total, 0)
+  const vuelto = esEfectivo ? Math.max(montoPagado - total, 0) : 0
 
   const puedeCobrar =
     carrito.length > 0 &&
-    (metodoPago !== 'EFECTIVO' || Number(montoRecibido || 0) >= total)
+    !!metodoPagoId &&
+    (!esEfectivo || Number(montoRecibido || 0) >= total) &&
+    (!requiereReferencia || referenciaPago.trim().length > 0)
 
   function handleAddProducto(producto: ProductoVenta) {
     if (producto.stock_disponible <= 0) {
@@ -140,37 +155,49 @@ export default function VentaRapidaPage() {
 
   function handleClearCart() {
     setCarrito([])
-    setMetodoPago('EFECTIVO')
+    setMetodoPagoId('')
     setMontoRecibido('')
+    setReferenciaPago('')
   }
 
-  async function handleCobrar() {
-    if (carrito.length === 0) {
-      alert('Agrega al menos un producto a la venta.')
-      return
-    }
-
-    if (metodoPago === 'EFECTIVO' && Number(montoRecibido || 0) < total) {
-      alert('El monto recibido no puede ser menor al total.')
-      return
-    }
-
-    const response = await createVentaRapida({
-      metodo_pago: metodoPago,
-      monto_recibido: metodoPago === 'EFECTIVO' ? Number(montoRecibido || 0) : total,
-      items: carrito.map((item) => ({
-        producto_id: item.producto.id,
-        cantidad: item.cantidad,
-      })),
-    })
-
-    if (!response) return
-
-    showSuccess('Venta registrada correctamente')
-
-    handleClearCart()
-    refetchProductos()
+async function handleCobrar() {
+  if (carrito.length === 0) {
+    alert('Agrega al menos un producto a la venta.')
+    return
   }
+
+  if (!metodoPagoId) {
+    alert('Selecciona un método de pago.')
+    return
+  }
+
+  if (esEfectivo && Number(montoRecibido || 0) < total) {
+    alert('El monto recibido no puede ser menor al total.')
+    return
+  }
+
+  if (requiereReferencia && !referenciaPago.trim()) {
+    alert('Ingresa la referencia del pago.')
+    return
+  }
+
+  const response = await createVentaRapida({
+    metodo_pago_id: Number(metodoPagoId),
+    monto_recibido: esEfectivo ? Number(montoRecibido || 0) : total,
+    referencia_pago: referenciaPago.trim() || null,
+    items: carrito.map((item) => ({
+      producto_id: item.producto.id,
+      cantidad: item.cantidad,
+    })),
+  })
+
+  if (!response) return
+
+  showSuccess('Venta registrada correctamente')
+
+  handleClearCart()
+  refetchProductos()
+}
 
   return (
     <div className="flex min-h-screen bg-slate-100 venta-rapida">
@@ -588,26 +615,41 @@ export default function VentaRapidaPage() {
                         Método de pago
                       </label>
 
-                      <select
-                        value={metodoPago}
-                        onChange={(e) => {
-                          const value = e.target.value as MetodoPago
-                          setMetodoPago(value)
+                  <select
+                    value={metodoPagoId}
+                    onChange={(e) => {
+                      const value = e.target.value
 
-                          if (value !== 'EFECTIVO') {
-                            setMontoRecibido(total > 0 ? total.toFixed(2) : '')
-                          } else {
-                            setMontoRecibido('')
-                          }
-                        }}
-                        className="w-full rounded-sm border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
-                      >
-                        <option value="EFECTIVO">Efectivo</option>
-                        <option value="YAPE">Yape</option>
-                        <option value="PLIN">Plin</option>
-                        <option value="TARJETA">Tarjeta</option>
-                        <option value="TRANSFERENCIA">Transferencia</option>
-                      </select>
+                      setMetodoPagoId(value)
+                      setReferenciaPago('')
+
+                      const metodo = metodosPago.find((item) => String(item.id) === value)
+
+                      if (metodo?.tipo !== 'EFECTIVO') {
+                        setMontoRecibido(total > 0 ? total.toFixed(2) : '')
+                      } else {
+                        setMontoRecibido('')
+                      }
+                    }}
+                    disabled={loadingMetodosPago}
+                    className="w-full rounded-sm border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 disabled:bg-slate-100"
+                  >
+                    <option value="">
+                      {loadingMetodosPago ? 'Cargando...' : 'Seleccionar método'}
+                    </option>
+
+                    {metodosPago.map((metodo) => (
+                      <option key={metodo.id} value={metodo.id}>
+                        {metodo.nombre}
+                      </option>
+                    ))}
+                  </select>
+
+                  {metodosPagoError && (
+                    <p className="mt-1 text-xs font-medium text-red-600">
+                      {metodosPagoError}
+                    </p>
+                  )}
                     </div>
 
                     <div>
@@ -620,14 +662,14 @@ export default function VentaRapidaPage() {
                         min={0}
                         step="0.01"
                         value={
-                          metodoPago === 'EFECTIVO'
+                          esEfectivo
                             ? montoRecibido
                             : total > 0
                               ? String(total.toFixed(2))
                               : ''
                         }
                         onChange={(e) => setMontoRecibido(e.target.value)}
-                        disabled={metodoPago !== 'EFECTIVO'}
+                        disabled={!esEfectivo}
                         className="w-full rounded-sm border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500 disabled:bg-slate-100"
                       />
                     </div>
@@ -641,6 +683,26 @@ export default function VentaRapidaPage() {
                         {formatMoney(vuelto)}
                       </div>
                     </div>
+
+                    {requiereReferencia && (
+                      <div className="md:col-span-4">
+                        <div className="mb-1 flex items-center gap-2">
+                          <label className="block text-xs font-medium text-slate-600">
+                            Referencia de pago
+                          </label>
+
+                          <InfoTooltip text="Ingrese el número de operación o referencia que proporciona el procesador de pagos (ej. autorización, código de transacción)." />
+                        </div>
+
+                        <input
+                          type="text"
+                          value={referenciaPago}
+                          onChange={(e) => setReferenciaPago(e.target.value)}
+                          placeholder="Número de operación / referencia"
+                          className="w-full rounded-sm border border-slate-300 px-3 py-2 text-sm outline-none focus:border-sky-500"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 {ventaError && (

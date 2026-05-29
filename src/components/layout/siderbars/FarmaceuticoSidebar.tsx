@@ -34,17 +34,18 @@ const items: SidebarItem[] = [
     submenu: [
       { label: 'Punto de Venta', path: '/farmaceutico/pos' },
       { label: 'Venta Rápida', path: '/farmaceutico/pos/venta-rapida' },
+      { label: 'Historial de Ventas', path: '/farmaceutico/pos/historial-ventas' },
     ],
   },
   {
     label: 'Caja',
     icon: <CajaIcon />,
     submenu: [
-      { label: 'Apertura de Caja', path: '/farmaceutico/caja/apertura' },
-      { label: 'Cierre de Caja', path: '/farmaceutico/caja/cierre' },
+      { label: 'Caja chica POS', path: '/farmaceutico/caja/caja-chica' },
       { label: 'Movimientos de Caja', path: '/farmaceutico/caja/movimientos' },
-      { label: 'Apertura de Turno', path: '/farmaceutico/caja/apertura-turno' },
-      { label: 'Cierre de Turno', path: '/farmaceutico/caja/cierre-turno' },
+      { label: 'Historial de Cajas', path: '/farmaceutico/caja/historial-cajas' },
+      //{ label: 'Apertura de Turno', path: '/farmaceutico/caja/apertura-turno' },
+      //{ label: 'Cierre de Turno', path: '/farmaceutico/caja/cierre-turno' },
     ],
   },
   {

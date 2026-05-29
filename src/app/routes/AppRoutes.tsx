@@ -22,6 +22,8 @@ import { CajeroPage } from '../../pages/cajero/CajeroPage'
 import { ContadorPage } from '../../pages/contador/ContadorPage'
 import { FarmaceuticoPage } from '../../pages/farmaceutico/FarmaceuticoPage'
 import  VentaRapidaUsuarioPage  from '../../pages/farmaceutico/VentaRapidaUsuarioPage'
+import  HistorialVentasPage   from '../../pages/farmaceutico/HistorialVentasPage'
+import  CajaChicaPosPage   from '../../pages/farmaceutico/CajaChicaPosPage'
 import { GerentePage } from '../../pages/gerente/GerentePage'
 import { InventarioPage } from '../../pages/inventario/InventarioPage'
 import UsuariosPage from '../../pages/admin-empresa/UsuariosPage'
@@ -187,6 +189,15 @@ export function AppRoutes() {
           element={<VentaRapidaUsuarioPage />}
         />
 
+        <Route
+          path="/farmaceutico/caja/caja-chica"
+          element={<CajaChicaPosPage />}
+        />
+
+        <Route
+          path="/farmaceutico/pos/historial-ventas"
+          element={<HistorialVentasPage />}
+        />
 
       </Route>
 
