@@ -1,16 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
 import { AdminEmpresaHeader } from '../../components/layout/headers/AdminEmpresaHeader'
 import { FarmaceuticoSidebar } from '../../components/layout/siderbars/FarmaceuticoSidebar'
 import { showSuccess } from '../../components/ui/sonner'
 import TrashIcon from '../../components/icons/TrashIcon'
 import PillIcon from '../../components/icons/PillIcon'
 import { InfoTooltip } from '../../components/ui/InfoTooltip'
-
 import { useStoredUser } from '../../features/auth/hooks/useStoredUser'
 import { clearStoredUser } from '../../features/auth/utils/authStorage'
-
+import { useCreateVentaRapida } from '../../features/ventas/hooks/useCreateVentaRapida'
 import { useProductosVentaRapida } from '../../features/producto/hooks/useProductosVentaRapida'
 import type { ProductoVenta } from '../../features/producto/types/productoVenta.types'
 
@@ -23,17 +21,13 @@ type MetodoPago = 'EFECTIVO' | 'YAPE' | 'PLIN' | 'TARJETA' | 'TRANSFERENCIA'
 type VistaProductos = 'grid' | 'list'
 
 export default function VentaRapidaPage() {
-  
 
   const user = useStoredUser()
   const navigate = useNavigate()
-
   const [collapsed, setCollapsed] = useState(false)
-
   const [scannerMode, setScannerMode] = useState(true)
   const [search, setSearch] = useState('')
   const [vistaProductos, setVistaProductos] = useState<VistaProductos>('grid')
-
   const [carrito, setCarrito] = useState<CarritoItem[]>([])
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('EFECTIVO')
   const [montoRecibido, setMontoRecibido] = useState('')
@@ -42,7 +36,14 @@ export default function VentaRapidaPage() {
     productos,
     isLoading: loadingProductos,
     error: productosError,
+    refetch: refetchProductos,
   } = useProductosVentaRapida()
+
+  const {
+    createVentaRapida,
+    isLoading: creatingVenta,
+    error: ventaError,
+  } = useCreateVentaRapida()
 
   function handleLogout() {
     clearStoredUser()
@@ -143,7 +144,7 @@ export default function VentaRapidaPage() {
     setMontoRecibido('')
   }
 
-  function handleCobrar() {
+  async function handleCobrar() {
     if (carrito.length === 0) {
       alert('Agrega al menos un producto a la venta.')
       return
@@ -154,20 +155,21 @@ export default function VentaRapidaPage() {
       return
     }
 
-    console.log('Venta rápida:', {
-      tipo_comprobante: 'N_VENTA',
-      cliente: 'CLIENTE VARIOS',
-      carrito,
-      subtotal,
-      igv,
-      total,
-      metodoPago,
-      montoRecibido: montoPagado,
-      vuelto,
+    const response = await createVentaRapida({
+      metodo_pago: metodoPago,
+      monto_recibido: metodoPago === 'EFECTIVO' ? Number(montoRecibido || 0) : total,
+      items: carrito.map((item) => ({
+        producto_id: item.producto.id,
+        cantidad: item.cantidad,
+      })),
     })
 
-    alert('Venta registrada correctamente. Luego conectaremos esta acción con la API.')
+    if (!response) return
+
+    showSuccess('Venta registrada correctamente')
+
     handleClearCart()
+    refetchProductos()
   }
 
   return (
@@ -310,7 +312,7 @@ export default function VentaRapidaPage() {
                         type="button"
                         onClick={() => handleAddProducto(producto)}
                         disabled={producto.stock_disponible <= 0}
-                        className="group overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                        className="group overflow-hidden rounded-md border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <div className="p-4">
                           <div className="flex items-start justify-between gap-3">
@@ -641,25 +643,30 @@ export default function VentaRapidaPage() {
                     </div>
                   </div>
                 </div>
+                {ventaError && (
+                <div className="border-t border-red-100 bg-red-50 px-4 py-2 text-sm text-red-600">
+                  {ventaError}
+                </div>
+              )}
 
                 <div className="grid grid-cols-2 gap-3 border-t border-slate-200 bg-slate-50 p-4">
-                  <button
-                    type="button"
-                    onClick={handleClearCart}
-                    disabled={carrito.length === 0}
-                    className="rounded-sm border border-slate-300 bg-white px-4 py-4 text-base font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    LIMPIAR
-                  </button>
+                <button
+                  type="button"
+                  onClick={handleClearCart}
+                  disabled={carrito.length === 0 || creatingVenta}
+                  className="rounded-sm border border-slate-300 bg-white px-4 py-4 text-base font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  LIMPIAR
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={handleCobrar}
-                    disabled={!puedeCobrar}
-                    className="rounded-sm bg-sky-500 px-4 py-4 text-base font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    COBRAR
-                  </button>
+                <button
+                  type="button"
+                  onClick={handleCobrar}
+                  disabled={!puedeCobrar || creatingVenta}
+                  className="rounded-sm bg-sky-500 px-4 py-4 text-base font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {creatingVenta ? 'COBRANDO...' : 'COBRAR'}
+                </button>
                 </div>
               </div>
             </aside>
